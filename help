@@ -1,0 +1,5 @@
+uvcdynctrl  -> to access webcam params
+video0 -> laptop webcam
+video1 -> usb webcam
+uvcdynctrl -- help
+uvcdynctrl --device=video1 --load=cam.txt
