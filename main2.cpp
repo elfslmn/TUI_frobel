@@ -20,9 +20,19 @@ void drawText(Mat & image, string label, Point pt)
 
 void extractShapes(Mat & diff, Mat & gray)
 {
-	cvtColor(diff, gray, CV_RGB2GRAY);
+	/*cvtColor(diff, gray, CV_RGB2GRAY);
 	medianBlur(gray,gray,5);
-    threshold(gray, gray, 30, 255, THRESH_BINARY);
+    threshold(gray, gray, 50, 255, THRESH_BINARY); // 30 olunca sari gozukuyor, ama 50 daha robust */
+    
+    vector<Mat> rgbChannels(3);
+    split(diff, rgbChannels);
+    threshold(rgbChannels[0], rgbChannels[0], 70, 255, THRESH_BINARY); // Blue
+    threshold(rgbChannels[1], rgbChannels[1], 70, 255, THRESH_BINARY); // Green
+    threshold(rgbChannels[2], rgbChannels[2], 70, 255, THRESH_BINARY); // Red
+    
+    gray = rgbChannels[0] | rgbChannels[1] | rgbChannels[2]; // sum them
+    medianBlur(gray,gray,5);
+    //namedWindow("All",1);imshow("All", fin_img);
     
     vector<vector<Point> > contours;
     findContours(gray, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
@@ -32,7 +42,8 @@ void extractShapes(Mat & diff, Mat & gray)
     for( unsigned int i = 0; i< contours.size(); i++ )
 	{
 		double area = contourArea(contours[i]);
-		if(area > 500 && area < 3000)
+		//cout << area / (diff.rows * diff.cols) << endl;
+		if(area > 300 && area < 3000)
 		{
 			drawContours( gray , contours, i, Scalar(0,255,0),2);
 		}
@@ -52,7 +63,7 @@ void extractShapes(Mat & diff, Mat & gray)
       	bool isConvex = isContourConvex(approx);*/
 
       	RotatedRect rr = minAreaRect(contours[i]);
-      	cout << rr.angle << "\t"<< rr.size <<"\t" << rr.size.height / rr.size.width << endl;
+      	//cout << rr.angle << "\t"<< rr.size <<"\t" << rr.size.height / rr.size.width << endl;
       	
       	double ratio = rr.size.height / rr.size.width ;
       	if( ratio < 1 ) ratio = 1/ratio;
