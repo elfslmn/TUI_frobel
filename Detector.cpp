@@ -1,52 +1,107 @@
 #include "Detector.h"
 
-bool initCalibrationPattern(const string filepath){
-	Mat image = imread(filepath, CV_LOAD_IMAGE_GRAYSCALE);
-	resize(image,image,pSize);
-	bool found = findChessboardCorners(image, patternSize, pCorners);
-	if(found)
-	{
-		cornerSubPix(image, pCorners, Size(11, 11), Size(-1, -1),
-		TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
-		LOGD("Chessboard corners are detected in pattern image");
-	}
-	else
-	{
-		LOGE("Cannot found chessboard in projected image!");
-	}
-
-	imshow("Projector", projImage);	//TODO
-	return found;
+Detector::Detector(){
+    isSnapshotCaptured = false;
 }
 
-bool findHomography(Mat & image){
-	Mat gray;	// TODO check how android handle native elements ??
-	cvtColor(image, gray, COLOR_RGB2GRAY);
-	bool found = findChessboardCorners(gray, patternSize, cCorners);
-	if(found)
-	{
-		LOGD("Chessboard corners are detected in camera image");
-		cornerSubPix(gray, cCorners, Size(11, 11), Size(-1, -1),
-						TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
-		drawChessboardCorners(image, patternSize, Mat(cCorners), found);
-		homography = findHomography( cCorners, pCorners, CV_RANSAC );
-	}
-	else
-	{
-		LOGE("Cannot found chessboard in camera image!");
-	}
-	return found;
+void Detector::resetSnapshot(){
+    isSnapshotCaptured = false;
 }
 
-bool applyHomography(vector<Point2f> & points){
-	if(!homography.empty()){
-		if(points.size()){
-			perspectiveTransform(points, points, homography);
-		}
-		return true;
-	}
-	else{
-		LOGE("No homography found!");
-		return false;
-	}
+void pos(Mat &src)
+{
+    threshold(-src, src, 0, 0, CV_THRESH_TRUNC);
+    src = -src;
+    return;
+}
+
+bool Detector::processFrame(Mat & frame){
+    if(isSnapshotCaptured){
+        absdiff(frame, snapshot, diff);
+        //diff = frame - snapshot ;
+        //pos(diff);
+        //namedWindow("Diff",1); imshow("Diff", diff);
+        extractShapes();
+        namedWindow("Debug",1); imshow("Debug", debug);
+        return false;
+    }
+    else{
+        // Save current frame;
+        snapshot = frame.clone();
+        namedWindow("Snapshot",1); imshow("Snapshot", snapshot);
+        isSnapshotCaptured = true;
+        return true;
+    }
+}
+
+void Detector::extractShapes(){
+    centers.clear();
+    if(colorMode == RGB){
+        vector<Mat> rgbChannels(3);
+        split(diff, rgbChannels);
+        threshold(rgbChannels[0], rgbChannels[0], 50, 255, THRESH_BINARY); // Blue
+        threshold(rgbChannels[1], rgbChannels[1], 50, 255, THRESH_BINARY); // Green
+        threshold(rgbChannels[2], rgbChannels[2], 50, 255, THRESH_BINARY); // Red
+        mask = rgbChannels[0] | rgbChannels[1] | rgbChannels[2]; // sum them
+    }
+    else if(colorMode == HSV){
+        Mat hsv;
+    	cvtColor(diff, hsv, CV_BGR2HSV);
+        vector<Mat> channels(3);
+        split(hsv, channels);
+        threshold(channels[2], channels[2], 70, 255, THRESH_BINARY); // Hue
+        mask = channels[2];
+    }
+    else{
+        assert(false);
+    }
+
+    medianBlur(mask,mask,7);
+    namedWindow("Mask",1); imshow("Mask", mask);
+
+    vector<vector<Point> > contours;
+    findContours(mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+    cvtColor(mask, debug, CV_GRAY2RGB);
+    bitwise_and(diff,debug,debug);
+    for( unsigned int i = 0; i< contours.size(); i++ )
+    {
+        double area = contourArea(contours[i]);
+        //cout << area / (diff.rows * diff.cols) << endl;
+        if(area > 300 && area < 3000)
+        {
+            drawContours( debug , contours, i, Scalar(0,255,0),2);
+        }
+        else
+        {
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
+        }
+
+        RotatedRect rr = minAreaRect(contours[i]);
+        //cout << rr.angle << "\t"<< rr.size <<"\t" << rr.size.height / rr.size.width << endl;
+
+        double ratio = rr.size.height / rr.size.width ;
+        if( ratio < 1 ) ratio = 1/ratio;
+        if(ratio > 5)	// stick
+        {
+            Util::drawText(debug, "STK" , rr.center);
+            centers.push_back(rr.center);
+        }
+        else if( ratio <= 1.2) {
+            Util::drawText(debug, "CRC" , rr.center);
+            centers.push_back(rr.center);
+        }
+        else if( ratio > 1.2 && ratio < 3)
+        {
+            double perim = rr.size.height + rr.size.width;
+            if(perim <= 90) Util::drawText(debug, "GRN" , rr.center);
+            else if(perim > 90 && perim <= 120) Util::drawText(debug, "ORG" , rr.center);
+            else Util::drawText(debug, "RED" , rr.center);
+
+            centers.push_back(rr.center);
+        }
+
+
+    }
 }

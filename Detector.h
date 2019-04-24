@@ -1,20 +1,23 @@
-#include <iostream>
-#include <opencv2/opencv.hpp>
-
-using namespace std;
-using namespace cv;
-
-#define LOGI(...) do { printf(__VA_ARGS__); printf("\n"); } while (0)
-#define LOGD(...) do { printf(__VA_ARGS__); printf("\n"); } while (0)
-#define LOGE(...) do { printf(__VA_ARGS__); printf("\n"); } while (0)
+#include "Common.h"
+#include "Util.h"
 
 class Detector{
 public:
-	const static Size pSize = Size(1280,720);
-	Mat homography;
+	Detector();
+	bool processFrame(Mat & frame);
+	void resetSnapshot();
+
+	vector<Point2f> centers; // TODO should be vector<Shape>
 
 private:
-	const static Size patternSize = Size(9,6);
-	vector<Point2f> pCorners, cCorners;
+    Mat snapshot;
+    Mat diff;
+    Mat mask;
+	Mat debug;
+	bool isSnapshotCaptured;
+	enum Mode { RGB , HSV };
 
+	Mode colorMode = HSV; // TODO params a tası
+
+	void extractShapes();
 };
