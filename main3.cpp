@@ -57,6 +57,9 @@ int main (int argc, char *argv[])
         flip(frame, frame, -1); // flip 180 degree
         calibrator.findHomography(frame);
         imshow("Camera", frame);
+        
+        if (waitKey(10) == 27)  return 0;
+
     }
     //cap.release();
     cap.open(camId);
