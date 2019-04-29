@@ -10,3 +10,10 @@ void Util::drawText(Mat & image, string label, Point pt)
 	rectangle(image, pt + Point(0, baseline), pt + Point(text.width, -text.height),Scalar(255,255,255), CV_FILLED);
     putText(image, label, pt, fontface, scale, CV_RGB(0,0,0), thickness, 8);
 }
+
+void Util::drawRotetedRectAxis(Mat & image, RotatedRect rr){
+	Point2f vertices[4];
+	rr.points(vertices);
+	line(image, (vertices[0]+vertices[1])/2,  (vertices[2]+vertices[3])/2, Scalar(255,255,255), 1);
+	line(image, (vertices[1]+vertices[2])/2,  (vertices[0]+vertices[3])/2, Scalar(255,255,255), 1);
+}

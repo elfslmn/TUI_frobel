@@ -91,6 +91,7 @@ void Detector::extractShapes(){
         }
 
         RotatedRect rr = minAreaRect(contours[i]);
+        Util::drawRotetedRectAxis(debug, rr);
         //cout << rr.angle << "\t"<< rr.size <<"\t" << rr.size.height / rr.size.width << endl;
 
         double ratio = rr.size.height / rr.size.width ;
