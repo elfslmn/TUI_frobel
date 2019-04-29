@@ -1,5 +1,6 @@
 #include "Common.h"
 #include "Util.h"
+#include "Params.h"
 
 class Detector{
 public:
@@ -15,9 +16,8 @@ private:
     Mat mask;
 	Mat debug;
 	bool isSnapshotCaptured;
-	enum Mode { RGB , HSV };
 
-	Mode colorMode = HSV; // TODO params a tası
+	Mode colorMode = Params::color_space;
 
 	void extractShapes();
 };

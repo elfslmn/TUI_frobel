@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
         flip(frame, frame, -1); // flip 180 degree
         calibrator.findHomography(frame);
         imshow("Camera", frame);
-        
+
         if (waitKey(10) == 27)  return 0;
 
     }
@@ -83,11 +83,11 @@ int main (int argc, char *argv[])
         flip(frame, frame, -1); // flip 180 degree
         bool res = detector.processFrame(frame);
         // TODO for debug
-        calibrator.applyHomography(detector.centers);
+        /*calibrator.applyHomography(detector.centers);
         for(Point2f p : detector.centers){
             circle(projImage, p, 10, Scalar(255,255,255), 3);
             imshow("Projector", projImage);
-        }
+        }*/
         // end debug
 
         imshow("Camera", frame);

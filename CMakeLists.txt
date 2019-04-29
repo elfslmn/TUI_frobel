@@ -41,6 +41,7 @@ set(
   Calibrator.h 
   Util.h 
   Common.h
+  Params.h
 )
 
 set(

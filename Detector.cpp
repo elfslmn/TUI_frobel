@@ -20,7 +20,7 @@ bool Detector::processFrame(Mat & frame){
         absdiff(frame, snapshot, diff);
         //diff = frame - snapshot ;
         //pos(diff);
-        //namedWindow("Diff",1); imshow("Diff", diff);
+        namedWindow("Diff",1); imshow("Diff", diff);
         extractShapes();
         namedWindow("Debug",1); imshow("Debug", debug);
         return false;
@@ -39,17 +39,29 @@ void Detector::extractShapes(){
     if(colorMode == RGB){
         vector<Mat> rgbChannels(3);
         split(diff, rgbChannels);
-        threshold(rgbChannels[0], rgbChannels[0], 50, 255, THRESH_BINARY); // Blue
-        threshold(rgbChannels[1], rgbChannels[1], 50, 255, THRESH_BINARY); // Green
-        threshold(rgbChannels[2], rgbChannels[2], 50, 255, THRESH_BINARY); // Red
+
+        threshold(rgbChannels[0], rgbChannels[0], Params::blue_thresh, 255, THRESH_BINARY); // Blue
+        threshold(rgbChannels[1], rgbChannels[1], Params::green_thresh, 255, THRESH_BINARY); // Green
+        threshold(rgbChannels[2], rgbChannels[2], Params::red_thresh, 255, THRESH_BINARY); // Red
+
+        medianBlur(rgbChannels[0],rgbChannels[0],7);
+        //medianBlur(rgbChannels[1],rgbChannels[1],7);
+        //medianBlur(rgbChannels[2],rgbChannels[2],7);
+
         mask = rgbChannels[0] | rgbChannels[1] | rgbChannels[2]; // sum them
+
+        #ifdef DEBUG
+        namedWindow("B",1);imshow("B", rgbChannels[0]);
+        namedWindow("G",1);imshow("G", rgbChannels[1]);
+        namedWindow("R",1);imshow("R", rgbChannels[2]);
+        #endif
     }
     else if(colorMode == HSV){
         Mat hsv;
     	cvtColor(diff, hsv, CV_BGR2HSV);
         vector<Mat> channels(3);
         split(hsv, channels);
-        threshold(channels[2], channels[2], 70, 255, THRESH_BINARY); // Hue
+        threshold(channels[2], channels[2], Params::hue_thresh, 255, THRESH_BINARY); // Hue
         mask = channels[2];
     }
     else{
@@ -57,7 +69,7 @@ void Detector::extractShapes(){
     }
 
     medianBlur(mask,mask,7);
-    namedWindow("Mask",1); imshow("Mask", mask);
+    //namedWindow("Mask",1); imshow("Mask", mask);
 
     vector<vector<Point> > contours;
     findContours(mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);

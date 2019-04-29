@@ -1,4 +1,5 @@
 #include "Common.h"
+#include "Params.h"
 
 class Calibrator{
 public:
@@ -11,9 +12,9 @@ public:
 
 
 private:
-	const Size patternSize = Size(9,6); // TODO move to params
+	const Size patternSize = Size(Params::pattern_width, Params::pattern_height);
 	vector<Point2f> pCorners;
 	vector<Point2f> cCorners;
 	Mat homography;
-	const Size pSize = Size(1280,720); // TODO move to params
+	const Size pSize = Size(Params::projector_width, Params::projector_height);
 };
