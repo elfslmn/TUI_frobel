@@ -8,7 +8,7 @@ public:
 	bool processFrame(Mat & frame);
 	void resetSnapshot();
 
-	vector<Point2f> centers; // TODO should be vector<Shape>
+	vector<Shape> shapes;
 
 private:
     Mat snapshot;
