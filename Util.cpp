@@ -16,4 +16,8 @@ void Util::drawRotetedRectAxis(Mat & image, RotatedRect rr){
 	rr.points(vertices);
 	line(image, (vertices[0]+vertices[1])/2,  (vertices[2]+vertices[3])/2, Scalar(255,255,255), 1);
 	line(image, (vertices[1]+vertices[2])/2,  (vertices[0]+vertices[3])/2, Scalar(255,255,255), 1);
+
+	for(int i=0; i<4; i++){
+		Util::drawText(image, to_string(i), vertices[i]);
+	}
 }

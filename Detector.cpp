@@ -79,8 +79,8 @@ void Detector::extractShapes(){
     for( unsigned int i = 0; i< contours.size(); i++ )
     {
         double area = contourArea(contours[i]);
-        //cout << area / (diff.rows * diff.cols) << endl;
-        if(area > 300 && area < 3000)
+
+        if(area > Params::minShapeArea && area <  Params::maxShapeArea)
         {
             drawContours( debug , contours, i, Scalar(0,255,0),2);
         }
@@ -94,27 +94,83 @@ void Detector::extractShapes(){
         Util::drawRotetedRectAxis(debug, rr);
         //cout << rr.angle << "\t"<< rr.size <<"\t" << rr.size.height / rr.size.width << endl;
 
+        // Ratio
         double ratio = rr.size.height / rr.size.width ;
         if( ratio < 1 ) ratio = 1/ratio;
-        if(ratio > 5)	// stick
+
+        // Convexivity defects
+        vector<int> hull_indices;
+        vector<cv::Vec4i> defects;
+        convexHull(contours[i], hull_indices);
+        convexityDefects(contours[i], hull_indices, defects);
+        int defectCount = 0;
+        float defectDepth = 0;
+        for(int j=0; j< defects.size(); j++){
+            float depth = defects[j][3]/256;
+            if(depth <= Params::minDefectDepth) continue; // 5
+
+            defectCount++;
+            defectDepth = depth;
+
+            int startidx = defects[j][0];
+            Point ptStart( contours[i][startidx] ); // point of the contour where the defect begins
+            int endidx = defects[j][1];
+            Point ptEnd( contours[i][endidx] ); // point of the contour where the defect ends
+            int faridx = defects[j][2];
+            Point ptFar( contours[i][faridx]);// the farthest from the convex hull point within the defect
+
+            line( debug, ptStart, ptEnd, CV_RGB(255,255,0), 2 );
+            line( debug, (ptStart+ptEnd)/2, ptFar, CV_RGB(255,255,0), 2 );
+            circle( debug, ptStart, 4, Scalar(255,0,0), 2 );
+            circle( debug, ptEnd, 4, Scalar(255,0,255), 2 );
+
+            double y_diff = (ptEnd.y - ptStart.y)*-1; // *-1 since y coordinate is different in opencv
+            double x_diff = ptEnd.x - ptStart.x;
+            double angle = atan2(y_diff, x_diff) * 180 / PI;
+            if(angle < 0) angle += 360;
+
+            Util::drawText(debug, to_string(angle) ,Point(rr.center.x-100,rr.center.y));
+            Util::drawText(debug, to_string(depth) ,Point(rr.center.x+50,rr.center.y));
+        }
+        if( defectCount > 1){ // shapes should have 1 convexivity defect at most
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
+        }
+
+        if(ratio > 5 && defectDepth == 0)	// stick
         {
             Util::drawText(debug, "STK" , rr.center);
             centers.push_back(rr.center);
         }
-        else if( ratio <= 1.2) {
-            Util::drawText(debug, "CRC" , rr.center);
+        else if( ratio <= 1.2 && defectDepth == 0) {
+            Util::drawText(debug, "YEL" , rr.center);
             centers.push_back(rr.center);
         }
         else if( ratio > 1.2 && ratio < 3)
         {
             double perim = rr.size.height + rr.size.width;
-            if(perim <= 90) Util::drawText(debug, "GRN" , rr.center);
-            else if(perim > 90 && perim <= 120) Util::drawText(debug, "ORG" , rr.center);
-            else Util::drawText(debug, "RED" , rr.center);
-
-            centers.push_back(rr.center);
+            //cout << perim << endl;
+            if(perim < 95 && defectDepth > 12 && defectDepth < 22){
+                Util::drawText(debug, "GRN" , rr.center);
+                centers.push_back(rr.center);
+            }
+            else if(perim >= 95 && perim <= 120 && defectDepth > 25 && defectDepth < 34){
+                Util::drawText(debug, "ORG" , rr.center);
+                centers.push_back(rr.center);
+            }
+            else if(perim >= 121 && perim <= 170 && defectDepth >= 34 && defectDepth < 47){
+                Util::drawText(debug, "RED" , rr.center);
+                centers.push_back(rr.center);
+                /* TODO green+stick or green+green can be detected as red sometimes
+                 you can check the defect lenght or angle of the defect*/
+            }
+            else{
+                drawContours( debug , contours, i, Scalar(0,0,255),2);
+            }
         }
-
+        else{
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+        }
 
     }
 }

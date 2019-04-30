@@ -11,4 +11,6 @@ using namespace cv;
 #define LOGD(...) do { printf(__VA_ARGS__); printf("\n"); } while (0)
 #define LOGE(...) do { printf(__VA_ARGS__); printf("\n"); } while (0)
 
+#define PI 3.14159265
+
 enum Mode { RGB , HSV };

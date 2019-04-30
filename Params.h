@@ -5,7 +5,7 @@ class Params {
 public:
     const static Mode color_space = RGB;
 
-    const static int blue_thresh = 60;
+    const static int blue_thresh = 70;
     const static int green_thresh = 70;
     const static int red_thresh = 70;
 
@@ -17,6 +17,10 @@ public:
     const static int pattern_width = 9;
     const static int pattern_height= 6;
 
+    const static int minShapeArea = 300;
+    const static int maxShapeArea = 3000;
+
+    const static int minDefectDepth = 5;
 
 
     //Shared pointer to ObjectParams instance
