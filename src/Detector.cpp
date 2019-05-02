@@ -133,7 +133,7 @@ void Detector::extractShapes(){
             if(angle < 0) angle += 360;
 
             Util::drawText(debug, to_string(angle) ,Point(rr.center.x-100,rr.center.y));
-            //Util::drawText(debug, to_string(depth) ,Point(rr.center.x+50,rr.center.y));
+            Util::drawText(debug, to_string(depth) ,Point(rr.center.x+50,rr.center.y));
         }
         if( defectCount > 1){ // shapes should have 1 convexivity defect at most
             drawContours( debug , contours, i, Scalar(0,0,255),2);
@@ -169,11 +169,11 @@ void Detector::extractShapes(){
         {
             double perim = rr.size.height + rr.size.width;
             //cout << perim << endl;
-            if(perim < 95 && defectDepth > 12 && defectDepth < 22){
+            if(perim < 90 && defectDepth > 12 && defectDepth < 22){
                 Util::drawText(debug, "GRN" , rr.center);
                 shapes.push_back(Shape(GREEN, rr.center, angle));
             }
-            else if(perim >= 95 && perim <= 120 && defectDepth > 25 && defectDepth < 34){
+            else if(perim >= 90 && perim <= 120 && defectDepth > 25 && defectDepth < 34){
                 Util::drawText(debug, "ORG" , rr.center);
                 shapes.push_back(Shape(ORANGE, rr.center, angle));
             }

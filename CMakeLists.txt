@@ -37,18 +37,18 @@ include_directories(
 # Project Files
 set(
   HEADERS
-  Detector.h 
-  Calibrator.h 
-  Util.h 
-  Common.h
-  Params.h
+  ${INCLUDE_DIR}/Detector.h 
+  ${INCLUDE_DIR}/Calibrator.h 
+  ${INCLUDE_DIR}/Util.h 
+  ${INCLUDE_DIR}/Common.h
+  ${INCLUDE_DIR}/Params.h
 )
 
 set(
   SOURCES 
-  Detector.cpp 
-  Calibrator.cpp  
-  Util.cpp  
+  ${SRC_DIR}/Detector.cpp 
+  ${SRC_DIR}/Calibrator.cpp  
+  ${SRC_DIR}/Util.cpp  
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)
