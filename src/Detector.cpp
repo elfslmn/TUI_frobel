@@ -36,7 +36,7 @@ bool Detector::processFrame(Mat & frame){
 
 void Detector::extractShapes(){
     shapes.clear();
-    if(colorMode == RGB){
+    if(Params::color_space == RGB){
         vector<Mat> rgbChannels(3);
         split(diff, rgbChannels);
 
@@ -44,7 +44,7 @@ void Detector::extractShapes(){
         threshold(rgbChannels[1], rgbChannels[1], Params::green_thresh, 255, THRESH_BINARY); // Green
         threshold(rgbChannels[2], rgbChannels[2], Params::red_thresh, 255, THRESH_BINARY); // Red
 
-        medianBlur(rgbChannels[0],rgbChannels[0],7);
+        //medianBlur(rgbChannels[0],rgbChannels[0],7);
         //medianBlur(rgbChannels[1],rgbChannels[1],7);
         //medianBlur(rgbChannels[2],rgbChannels[2],7);
 
@@ -56,7 +56,7 @@ void Detector::extractShapes(){
         namedWindow("R",1);imshow("R", rgbChannels[2]);
         #endif
     }
-    else if(colorMode == HSV){
+    else if(Params::color_space == HSV){
         Mat hsv;
     	cvtColor(diff, hsv, CV_BGR2HSV);
         vector<Mat> channels(3);
@@ -78,16 +78,25 @@ void Detector::extractShapes(){
     bitwise_and(diff,debug,debug);
 
     //processContours
+    if(Params::game_mode == FROBEL){
+        processFrobel(contours);
+    }
+    else if(Params::game_mode == TANGRAM){
+        processTangram(contours);
+    }
+
+    //if(shapes.size()) LOGD("%d shapes are found", shapes.size());
+}
+
+void Detector::processFrobel(vector<vector<Point> > & contours){
     for( unsigned int i = 0; i< contours.size(); i++ )
     {
+        // Area check
         double area = contourArea(contours[i]);
-
-        if(area > Params::minShapeArea && area <  Params::maxShapeArea)
-        {
+        if(area > Params::minFrobelArea && area <  Params::maxFrobelArea){
             drawContours( debug , contours, i, Scalar(0,255,0),2);
         }
-        else
-        {
+        else{ // reject contour
             drawContours( debug , contours, i, Scalar(0,0,255),2);
             continue;
         }
@@ -169,11 +178,11 @@ void Detector::extractShapes(){
         {
             double perim = rr.size.height + rr.size.width;
             //cout << perim << endl;
-            if(perim < 90 && defectDepth > 12 && defectDepth < 22){
+            if(perim < 95 && defectDepth > 12 && defectDepth < 22){
                 Util::drawText(debug, "GRN" , rr.center);
                 shapes.push_back(Shape(GREEN, rr.center, angle));
             }
-            else if(perim >= 90 && perim <= 120 && defectDepth > 25 && defectDepth < 34){
+            else if(perim >= 90 && perim <= 120 && defectDepth > 25 && defectDepth <= 34){
                 Util::drawText(debug, "ORG" , rr.center);
                 shapes.push_back(Shape(ORANGE, rr.center, angle));
             }
@@ -192,5 +201,94 @@ void Detector::extractShapes(){
         }
     }
 
-    //if(shapes.size()) LOGD("%d shapes are found", shapes.size());
+}
+
+void Detector::processTangram(vector<vector<Point> > & contours){
+    for( unsigned int i = 0; i< contours.size(); i++ )
+    {
+        // Area check
+        double area = contourArea(contours[i]);
+        if(area > 100 && area <  2000){
+            drawContours( debug , contours, i, Scalar(0,255,0),2);
+        }
+        else{   // reject contour
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
+        }
+
+        // Perimeter check
+        double perim = arcLength(contours[i],true);
+        if(perim > 300){ // reject contour
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
+        }
+
+        // Corner count check
+        double epsilon = 0.05*perim ;
+        vector<Point> approx;
+        approxPolyDP(contours[i], approx, epsilon, true);
+        for( unsigned int j = 0; j< approx.size(); j++ ){
+           circle(debug, approx[j], 2, Scalar(255,0,0), -1, 8, 0 );
+        }
+
+        if(approx.size() == 3){ // triangle
+            if(300 <= area && area <= 550 && 70 <= perim && perim <= 100){
+                Util::drawText(debug, "GRN" , approx[0]);
+            }
+            else if(500 <= area && area <= 1100 && 100 <= perim && perim <= 140){
+                Util::drawText(debug, "ORG" , approx[0]);
+            }
+            else if(1400 <= area && area <= 2000 && 170 <= perim && perim <= 220){
+                Util::drawText(debug, "RED" , approx[0]);
+            }
+            else{ // rejected triangle
+                Util::drawText(debug, "R_TRI" , approx[0]);
+                drawContours( debug , contours, i, Scalar(0,0,255),2);
+            }
+            Util::drawText(debug, to_string(area) , approx[1]);
+            Util::drawText(debug, to_string(perim), approx[2]);
+        }
+        else if(approx.size() == 4){
+            // TODO square and parallegrom is not clear. Find difference !!
+            if(720 <= area && area <= 950 && 120 <= perim && perim <= 150){
+                Util::drawText(debug, "BLU" , approx[0]);
+            }
+            else if(400 <= area && area <= 820 && 75 <= perim && perim <= 120){
+                Util::drawText(debug, "YEL" , approx[0]);
+            }
+            else{ // rejected square
+                Util::drawText(debug, "R_SQR" , approx[0]);
+                drawContours( debug , contours, i, Scalar(0,0,255),2);
+            }
+            Util::drawText(debug, to_string(area) , approx[1]);
+            Util::drawText(debug, to_string(perim), approx[2]);
+
+        }
+        else if(approx.size() == 5){ // square has extra corner sometimes due to noise
+            if(400 <= area && area <= 820 && 75 <= perim && perim <= 120){
+                Util::drawText(debug, "YEL" , approx[0]);
+            }
+            Util::drawText(debug, to_string(area) , approx[1]);
+            Util::drawText(debug, to_string(perim), approx[2]);
+        }
+        else{
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
+        }
+
+        // Check color percentages
+        /*Mat mask = Mat::zeros(diff.rows, diff.cols, CV_8UC1);
+        Mat extract = Mat::zeros(diff.rows, diff.cols, CV_8UC3);
+        drawContours(mask, contours, i, Scalar(255), CV_FILLED);
+        diff.copyTo(extract, mask);
+        auto m =  mean(extract);
+        double s = m[0] + m[1] + m[2];
+        double r = m[2]/s;
+        double g = m[1]/s;
+        double b = m[0]/s;
+        printf("%.3f - %.3f - %.3f\n", r,g,b);
+        namedWindow("Extract",1); imshow("Extract", extract);*/
+
+    }
+
 }

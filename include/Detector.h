@@ -17,7 +17,8 @@ private:
 	Mat debug;
 	bool isSnapshotCaptured;
 
-	Mode colorMode = Params::color_space;
-
 	void extractShapes();
+	void processFrobel(vector<vector<Point> > & contours);
+	void processTangram(vector<vector<Point> > & contours);
+
 };

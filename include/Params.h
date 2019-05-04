@@ -3,7 +3,8 @@
 
 class Params {
 public:
-    const static Mode color_space = RGB;
+    const static ColorMode color_space = RGB;
+    const static GameMode game_mode = TANGRAM;
 
     const static int blue_thresh = 70;
     const static int green_thresh = 70;
@@ -17,8 +18,8 @@ public:
     const static int pattern_width = 9;
     const static int pattern_height= 6;
 
-    const static int minShapeArea = 300;
-    const static int maxShapeArea = 3000;
+    const static int minFrobelArea = 300;
+    const static int maxFrobelArea = 3000;
 
     const static int minDefectDepth = 5;
 
