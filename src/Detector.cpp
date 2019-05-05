@@ -15,7 +15,7 @@ void pos(Mat &src)
     return;
 }
 
-bool Detector::processFrame(Mat & frame){
+void Detector::processFrame(Mat & frame){
     if(isSnapshotCaptured){
         absdiff(frame, snapshot, diff);
         //diff = frame - snapshot ;
@@ -23,14 +23,12 @@ bool Detector::processFrame(Mat & frame){
         namedWindow("Diff",1); imshow("Diff", diff);
         extractShapes();
         namedWindow("Debug",1); imshow("Debug", debug);
-        return false;
     }
     else{
         // Save current frame;
         snapshot = frame.clone();
         namedWindow("Snapshot",1); imshow("Snapshot", snapshot);
         isSnapshotCaptured = true;
-        return true;
     }
 }
 

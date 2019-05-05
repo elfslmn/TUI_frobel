@@ -5,8 +5,9 @@
 class Detector{
 public:
 	Detector();
-	bool processFrame(Mat & frame);
+	void processFrame(Mat & frame);
 	void resetSnapshot();
+	bool isSnapshotCaptured;
 
 	vector<Shape> shapes;
 
@@ -15,7 +16,6 @@ private:
     Mat diff;
     Mat mask;
 	Mat debug;
-	bool isSnapshotCaptured;
 
 	void extractShapes();
 	void processFrobel(vector<vector<Point> > & contours);

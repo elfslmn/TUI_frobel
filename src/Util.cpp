@@ -21,3 +21,14 @@ void Util::drawRotetedRectAxis(Mat & image, RotatedRect rr){
 		Util::drawText(image, to_string(i), vertices[i]);
 	}
 }
+
+/*void updateBrightness(Mat & image, int beta){
+	for( int y = 0; y < image.rows; y++ ) {
+		for( int x = 0; x < image.cols; x++ ) {
+			for( int c = 0; c < image.channels(); c++ ) {
+				image.at<Vec3b>(y,x)[c] =
+				  saturate_cast<uchar>( image.at<Vec3b>(y,x)[c] + beta );
+			}
+		}
+	}
+}*/

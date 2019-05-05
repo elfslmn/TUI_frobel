@@ -5,3 +5,7 @@ uvcdynctrl -- help
 uvcdynctrl --device=video1 --load=cam.txt
 
 v4l2-ctl -d /dev/video1 -L
+
+microsoft webcam
+uvcdynctrl --device=video1 -s "White Balance Temperature, Auto" 0
+S

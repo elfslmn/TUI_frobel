@@ -18,7 +18,6 @@ enum GameMode { FROBEL, TANGRAM};
 
 enum ShapeType {CIRCLE, STICK, GREEN, ORANGE, RED, SQUARE, PARALLEL};
 
-
 /* Angle can be in range
 For Frobel types
   circle : -1
@@ -29,5 +28,15 @@ struct Shape{
     ShapeType type;
     Point2f center;
     double angle;
+    Shape(){};
     Shape(ShapeType t, Point2f c, double a) :  type(t), center(c), angle(a){}
+};
+
+enum GameState {
+    CALIBRATING,
+    CALIBRATED,
+    WAIT_SNAPSHOT,
+    CAPTURING_SNAPSHOT,
+    IN_LEVEL,
+    LEVEL_FINISHED
 };

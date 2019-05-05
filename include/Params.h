@@ -4,7 +4,7 @@
 class Params {
 public:
     const static ColorMode color_space = RGB;
-    const static GameMode game_mode = TANGRAM;
+    const static GameMode game_mode = FROBEL;
 
     const static int blue_thresh = 70;
     const static int green_thresh = 70;
@@ -22,7 +22,6 @@ public:
     const static int maxFrobelArea = 3000;
 
     const static int minDefectDepth = 5;
-
 
     //Shared pointer to ObjectParams instance
     /*typedef std::shared_ptr<Params> Ptr;

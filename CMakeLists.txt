@@ -37,23 +37,21 @@ include_directories(
 # Project Files
 set(
   HEADERS
-  ${INCLUDE_DIR}/Detector.h 
-  ${INCLUDE_DIR}/Calibrator.h 
-  ${INCLUDE_DIR}/Util.h 
+  ${INCLUDE_DIR}/Detector.h
+  ${INCLUDE_DIR}/Calibrator.h
+  ${INCLUDE_DIR}/Util.h
   ${INCLUDE_DIR}/Common.h
   ${INCLUDE_DIR}/Params.h
+  ${INCLUDE_DIR}/Game.h
 )
 
 set(
-  SOURCES 
-  ${SRC_DIR}/Detector.cpp 
-  ${SRC_DIR}/Calibrator.cpp  
-  ${SRC_DIR}/Util.cpp  
+  SOURCES
+  ${SRC_DIR}/Detector.cpp
+  ${SRC_DIR}/Calibrator.cpp
+  ${SRC_DIR}/Util.cpp
+  ${SRC_DIR}/Game.cpp  
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)
-target_link_libraries(${PROJECT_NAME} "${OpenCV_LIBRARIES}") 
- 
-
-
-
+target_link_libraries(${PROJECT_NAME} "${OpenCV_LIBRARIES}")

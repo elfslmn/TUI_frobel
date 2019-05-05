@@ -1,24 +1,16 @@
-#include "Common.h"
 #include "Detector.h"
 #include "Calibrator.h"
+#include "Game.h"
 #include <cxxopts.hpp>
 
 using namespace std;
 using namespace cv;
 
-void updateBrightness(Mat & image, int beta){
-	for( int y = 0; y < image.rows; y++ ) {
-		for( int x = 0; x < image.cols; x++ ) {
-			for( int c = 0; c < image.channels(); c++ ) {
-				image.at<Vec3b>(y,x)[c] =
-				  saturate_cast<uchar>( image.at<Vec3b>(y,x)[c] + beta );
-			}
-		}
-	}
-}
+//Global variables
+static int frameTimer;
+static GameState game_state; // NOTE can be a part of game class
 
-int main (int argc, char *argv[])
-{
+int main (int argc, char *argv[]){
     // Parse options
     cxxopts::Options options("TUI Frobel");
     options
@@ -37,71 +29,94 @@ int main (int argc, char *argv[])
 
     // open camera
     int camId = 0;
-    if(result.count("c"))
-    {
+    if(result.count("c")){
         camId = result["c"].as<int>();
     }
     cout << "Cam id = " << camId << endl;
     VideoCapture cap(camId);
-    Mat frame;
+    Mat frame, projImage;
 
     // Calculate homography -----------------------------------------
     Calibrator calibrator;
     calibrator.initCalibrationPattern("images/pattern.png");
-    while(calibrator.isHomographyFound == false){
-        cap >> frame;
-        if(frame.empty()){
-            cerr << "No camera capture" << endl;
-            return 0;
-        }
-        flip(frame, frame, -1); // flip 180 degree
+	game_state = CALIBRATING;
+	LOGD("Game state: CALIBRATING");
+    /*while(calibrator.isHomographyFound == false){
+		// Read a frame from cam
+		cap >> frame;
+		if(frame.empty()){
+			cerr << "No camera capture" << endl;
+			break;
+		}
+		flip(frame, frame, -1); // flip 180 degree
         calibrator.findHomography(frame);
         imshow("Camera", frame);
 
         if (waitKey(10) == 27)  return 0;
-
-    }
+    }*/
+	game_state = CALIBRATED;
+	LOGD("Game state: CALIBRATED");
     //cap.release();
     cap.open(camId);
 
     // Start levels -------------------------------------------------
     Detector detector;
-    // project level image
-    Mat projImage = imread("images/espas_011-intro.png" ,IMREAD_UNCHANGED); // TODO save in a mat
-    resize(projImage,projImage,Size(1280,720)); // TODO move to params
-    //updateBrightness(projImage, 50);
-    imshow("Projector", projImage);
-    waitKey(500); // important to capture
-
+	Game game;
     while (true)
     {
-        cap >> frame;
-        if(frame.empty()){
-            cerr << "No camera capture" << endl;
-            break;
-        }
-        flip(frame, frame, -1); // flip 180 degree
-        bool res = detector.processFrame(frame);
-        // TODO for debug
-        /*calibrator.applyHomography(detector.centers);
-        for(Point2f p : detector.centers){
-            circle(projImage, p, 10, Scalar(255,255,255), 3);
-            imshow("Projector", projImage);
-        }*/
-        // end debug
+		// Read a frame from cam
+		cap >> frame;
+		if(frame.empty()){
+			cerr << "No camera capture" << endl;
+			break;
+		}
+		flip(frame, frame, -1); // flip 180 degree
+
+		if(game_state == CALIBRATED){
+			Shape dummy;
+			game = Game(1,dummy,"images/espas_011-intro.png", projImage);
+		    imshow("Projector", projImage);
+
+			frameTimer = 30; // wait few frames, important to capture snapshot
+			game_state = WAIT_SNAPSHOT;
+			LOGD("Game state: WAIT_SNAPSHOT");
+		}
+		else if(game_state == WAIT_SNAPSHOT){
+			frameTimer--;
+			if(frameTimer == 0){
+				game_state = CAPTURING_SNAPSHOT;
+				LOGD("Game state: CAPTURING_SNAPSHOT");
+			}
+		}
+		else if(game_state == CAPTURING_SNAPSHOT){
+			detector.processFrame(frame);
+			if(detector.isSnapshotCaptured == true){
+				game_state = IN_LEVEL;
+				LOGD("Game state: IN_LEVEL");
+			}
+		}
+		else if(game_state == IN_LEVEL){
+			detector.processFrame(frame);
+			//TODO get shapes and process in game level
+
+			// for debug
+	        /*calibrator.applyHomography(detector.centers);
+	        for(Point2f p : detector.centers){
+	            circle(projImage, p, 10, Scalar(255,255,255), 3);
+	            imshow("Projector", projImage);
+	        }*/
+	        // end debug
+		}
+
+
+
 
         imshow("Camera", frame);
 
+		// Handle key presses
         char key = (char) waitKey(30);
-        if(key == 'p')
-        {
-            key = (char) waitKey();
-        }
-        if (key == 'q' || key == 27)
-        {
-            break;
-        }
-
+        if(key == 'p') {key = (char) waitKey();}
+        if (key == 'q' || key == 27) {break;}
     }
 
 
