@@ -24,8 +24,14 @@ int main (int argc, char *argv[]){
     // windows
     namedWindow ("Projector", WINDOW_NORMAL);
     namedWindow ("Camera", WINDOW_NORMAL);
-    //setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+    setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
     moveWindow("Projector", 1366, 0); // 1366 width of my pc screen
+
+    Calibrator calibrator;
+    calibrator.initCalibrationPattern("images/pattern.png");
+    game_state = CALIBRATING;
+    Detector detector;
+    Game game;
 
     // open camera
     int camId = 0;
@@ -36,32 +42,6 @@ int main (int argc, char *argv[]){
     VideoCapture cap(camId);
     Mat frame, projImage;
 
-    // Calculate homography -----------------------------------------
-    Calibrator calibrator;
-    calibrator.initCalibrationPattern("images/pattern.png");
-	game_state = CALIBRATING;
-	LOGD("Game state: CALIBRATING");
-    /*while(calibrator.isHomographyFound == false){
-		// Read a frame from cam
-		cap >> frame;
-		if(frame.empty()){
-			cerr << "No camera capture" << endl;
-			break;
-		}
-		flip(frame, frame, -1); // flip 180 degree
-        calibrator.findHomography(frame);
-        imshow("Camera", frame);
-
-        if (waitKey(10) == 27)  return 0;
-    }*/
-	game_state = CALIBRATED;
-	LOGD("Game state: CALIBRATED");
-    //cap.release();
-    cap.open(camId);
-
-    // Start levels -------------------------------------------------
-    Detector detector;
-	Game game;
     while (true)
     {
 		// Read a frame from cam
@@ -72,7 +52,13 @@ int main (int argc, char *argv[]){
 		}
 		flip(frame, frame, -1); // flip 180 degree
 
-		if(game_state == CALIBRATED){
+        if(game_state == CALIBRATING){
+            calibrator.findHomography(frame);
+            if(calibrator.isHomographyFound == true){
+                game_state = CALIBRATED;
+            }
+        }
+		else if(game_state == CALIBRATED){
 			Shape dummy;
 			game = Game(1,dummy,"images/espas_011-intro.png", projImage);
 		    imshow("Projector", projImage);
