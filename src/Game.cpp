@@ -2,7 +2,7 @@
 
 Game::Game(){}
 
-Game::Game(int level, Shape correct, string imagepath, Mat & projImage){
+Game::Game(int level, Shape correctShape, string imagepath, Mat & projImage){
     this->level = level;
     this->correctShape = correctShape;
 
@@ -11,6 +11,18 @@ Game::Game(int level, Shape correct, string imagepath, Mat & projImage){
     LOGD("Game object initialized: Level: %d", level);
 }
 
-void processShapes(vector<Shape> & shapes){
-    
+int Game::processShapes(vector<Shape> & shapes){
+    for(Shape shape : shapes){
+        // Discard shapes that outside the projector view
+        if( shape.center.x < 0 ||
+            shape.center.x > Params::projector_width ||
+            shape.center.y < 0 ||
+            shape.center.y > Params::projector_height){ continue; }
+
+        if( shape.type == correctShape.type &&
+            norm(shape.center - correctShape.center) < 50 &&
+            abs(((int)(shape.angle - correctShape.angle)) % 360 ) < 20 ){ return 1;}
+
+    }
+    return false;
 }

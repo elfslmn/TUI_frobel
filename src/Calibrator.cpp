@@ -44,10 +44,17 @@ bool Calibrator::findHomography(Mat & image){
 	return found;
 }
 
-bool Calibrator::applyHomography(vector<Point2f> & points){
+bool Calibrator::applyHomography(vector<Shape> & shapes){
 	if(isHomographyFound){
+		vector<Point2f> points;
+		for(Shape s: shapes){
+			points.push_back(s.center);
+		}
 		if(points.size()){
 			perspectiveTransform(points, points, homography);
+		}
+		for(int i=0; i<(int)points.size(); i++){
+			shapes[i].center = points[i];
 		}
 		return true;
 	}

@@ -23,6 +23,8 @@ public:
 
     const static int minDefectDepth = 5;
 
+    const static int levelCount = 4;
+
     //Shared pointer to ObjectParams instance
     /*typedef std::shared_ptr<Params> Ptr;
 

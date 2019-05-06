@@ -6,6 +6,9 @@
 using namespace std;
 using namespace cv;
 
+//Helper methods;
+pair<Shape, string> getLevelParameters(int level);
+
 //Global variables
 static int frameTimer;
 static GameState game_state; // NOTE can be a part of game class
@@ -30,8 +33,10 @@ int main (int argc, char *argv[]){
     Calibrator calibrator;
     calibrator.initCalibrationPattern("images/pattern.png");
     game_state = CALIBRATING;
+    LOGD("Game state: CALIBRATING");
     Detector detector;
     Game game;
+    int level = 1;
 
     // open camera
     int camId = 0;
@@ -55,12 +60,13 @@ int main (int argc, char *argv[]){
         if(game_state == CALIBRATING){
             calibrator.findHomography(frame);
             if(calibrator.isHomographyFound == true){
-                game_state = CALIBRATED;
+                game_state = NEW_GAME;
+                LOGD("Game state: NEW_GAME");
             }
         }
-		else if(game_state == CALIBRATED){
-			Shape dummy;
-			game = Game(1,dummy,"images/espas_011-intro.png", projImage);
+		else if(game_state == NEW_GAME){
+			auto param = getLevelParameters(level);
+			game = Game(level,param.first, param.second, projImage);
 		    imshow("Projector", projImage);
 
 			frameTimer = 30; // wait few frames, important to capture snapshot
@@ -83,28 +89,85 @@ int main (int argc, char *argv[]){
 		}
 		else if(game_state == IN_LEVEL){
 			detector.processFrame(frame);
-			//TODO get shapes and process in game level
-
-			// for debug
-	        /*calibrator.applyHomography(detector.centers);
-	        for(Point2f p : detector.centers){
-	            circle(projImage, p, 10, Scalar(255,255,255), 3);
+            calibrator.applyHomography(detector.shapes);
+            //for debug
+	        /*for(Shape s : detector.shapes){
+	            circle(projImage, s.center, 10, Scalar(255,255,255), 3);
 	            imshow("Projector", projImage);
 	        }*/
 	        // end debug
+
+            //TODO should return, feedback or finished etc
+            int res = game.processShapes(detector.shapes);
+            if(res == 1){
+                game_state = LEVEL_FINISHED;
+                LOGD("Game state: LEVEL_FINISHED");
+            }
+            else{
+                // TODO feedack audios
+            }
 		}
-
-
-
-
+        else if(game_state == LEVEL_FINISHED){
+            //TODO tebrikler audio
+            if(game.level == Params::levelCount){
+                LOGD("All levels are cleared");
+                break;
+            }
+            else{
+                LOGD("Level %d is cleared", game.level);
+            }
+            game_state = PICKUP_SHAPES;
+            LOGD("Game state: PICKUP_SHAPES");
+        }
+        else if(game_state == PICKUP_SHAPES){
+            // TODO tasları al audio
+        }
         imshow("Camera", frame);
-
 		// Handle key presses
         char key = (char) waitKey(30);
         if(key == 'p') {key = (char) waitKey();}
         if (key == 'q' || key == 27) {break;}
+        if(key == 83 && game_state == PICKUP_SHAPES){
+            level++;
+            detector.resetSnapshot();
+            game_state = NEW_GAME;
+            LOGD("Game state: NEW_GAME");
+        }
     }
 
 
     return 0;
+}
+
+
+pair<Shape, string> getLevelParameters(int level){
+    Shape shape;
+    string filepath;
+    switch (level) {
+        case 1:
+        shape.center = Point2f(0.537 * Params::projector_width , 0.723 * Params::projector_height );
+        shape.type = GREEN;
+        shape.angle = 70.0;
+        filepath = "images/espas_011-intro.png";
+        break;
+        case 2:
+        shape.center = Point2f(0.585 * Params::projector_width , 0.519 * Params::projector_height );
+        shape.type = STICK;
+        shape.angle = 103.0;
+        filepath = "images/espas_021-intro.png";
+        break;
+        case 3:
+        shape.center = Point2f(0.622 * Params::projector_width , 0.869 * Params::projector_height );
+        shape.type = CIRCLE;
+        shape.angle = -1;
+        filepath = "images/espas_031-intro.png";
+        break;
+        case 4:
+        shape.center = Point2f(0.376 * Params::projector_width , 0.846 * Params::projector_height );
+        shape.type = GREEN;
+        shape.angle = 100.0;
+        filepath = "images/espas_041-intro.png";
+        break;
+    }
+    return {shape, filepath};
 }

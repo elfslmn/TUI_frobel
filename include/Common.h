@@ -34,9 +34,10 @@ struct Shape{
 
 enum GameState {
     CALIBRATING,
-    CALIBRATED,
+    NEW_GAME,
     WAIT_SNAPSHOT,
     CAPTURING_SNAPSHOT,
     IN_LEVEL,
-    LEVEL_FINISHED
+    LEVEL_FINISHED,
+    PICKUP_SHAPES
 };

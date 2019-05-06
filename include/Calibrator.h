@@ -6,7 +6,7 @@ public:
 	Calibrator();
 	bool initCalibrationPattern(const string filepath);
 	bool findHomography(Mat & image);
-	bool applyHomography(vector<Point2f> & points);
+	bool applyHomography(vector<Shape> & shapes);
 
 	bool isHomographyFound;
 
