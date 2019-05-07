@@ -28,10 +28,14 @@ if(NOT OpenCV_FOUND)
   return()
 endif()
 
+#SDL
+find_package(SDL2 REQUIRED)
+
 # Includes
 include_directories(
   ${INCLUDE_DIR}
   ${OpenCV_INCLUDE_DIRS}
+  ${SDL2_INCLUDE_DIRS}
 )
 
 # Project Files
@@ -50,8 +54,10 @@ set(
   ${SRC_DIR}/Detector.cpp
   ${SRC_DIR}/Calibrator.cpp
   ${SRC_DIR}/Util.cpp
-  ${SRC_DIR}/Game.cpp  
+  ${SRC_DIR}/Game.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)
-target_link_libraries(${PROJECT_NAME} "${OpenCV_LIBRARIES}")
+
+string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES) # To handle trailing whitespaces error
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${SDL2_LIBRARIES} -lSDL2_mixer)
