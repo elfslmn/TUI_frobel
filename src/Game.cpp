@@ -8,10 +8,13 @@ Game::Game(int level, Shape correctShape, string imagepath, Mat & projImage){
 
     projImage = imread(imagepath ,IMREAD_UNCHANGED);
     resize(projImage,projImage,Size(Params::projector_width ,Params::projector_height));
+
+    memset(feedbackCounter, 0, sizeof(feedbackCounter));
     LOGD("Game object initialized: Level: %d", level);
 }
 
 int Game::processShapes(vector<Shape> & shapes){
+    int feedback = 4; // no object
     for(Shape shape : shapes){
         // Discard shapes that outside the projector view
         if( shape.center.x < 0 ||
@@ -19,10 +22,31 @@ int Game::processShapes(vector<Shape> & shapes){
             shape.center.y < 0 ||
             shape.center.y > Params::projector_height){ continue; }
 
-        if( shape.type == correctShape.type &&
-            norm(shape.center - correctShape.center) < 50 &&
-            abs(((int)(shape.angle - correctShape.angle)) % 360 ) < 20 ){ return 1;}
-
+        if(norm(shape.center - correctShape.center) < 50){
+            if(shape.type == correctShape.type ){
+                if(abs(((int)(shape.angle - correctShape.angle)) % 360 ) < 20){
+                    feedback = 0;
+                    break;
+                }
+                else{ // location and type correct, angle wrong
+                    feedback = min(feedback, 1);
+                }
+            }
+            else{ // location correct, type wrong
+                feedback = min(feedback, 2);
+            }
+        }
+        else{ // location wrong
+            feedback = min(feedback, 3);
+        }
     }
-    return false;
+    feedbackCounter[feedback]++;
+    for(int i=0; i<5; i++){
+        if(feedbackCounter[i] >= 10*(i+1)){ // onemsiz feedbacki daha gec ver
+            LOGD("Feedback %d is sent",i);
+            memset(feedbackCounter, 0, sizeof(feedbackCounter));
+            return i;
+        }
+    }
+    return -1;
 }

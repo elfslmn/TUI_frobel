@@ -18,7 +18,11 @@ void closeSDL();
 static int frameTimer;
 static GameState game_state; // NOTE can be a part of game class
 //The music that will be played
-Mix_Music *gMusic = NULL;
+Mix_Music *gStory = NULL;
+Mix_Music *gCongr = NULL;
+Mix_Music *gLocFb = NULL;
+Mix_Music *gTypeFb = NULL;
+Mix_Music *gAngleFb = NULL;
 
 //The sound effects that will be used
 // NOTE playChannel only works with wav files
@@ -40,7 +44,7 @@ int main (int argc, char *argv[]){
     // windows
     namedWindow ("Projector", WINDOW_NORMAL);
     namedWindow ("Camera", WINDOW_NORMAL);
-    setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+    //setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
     moveWindow("Projector", 1366, 0); // 1366 width of my pc screen
 
     //initialization
@@ -96,7 +100,7 @@ int main (int argc, char *argv[]){
 			game_state = WAIT_SNAPSHOT;
 			LOGD("Game state: WAIT_SNAPSHOT");
 
-            Mix_PlayMusic( gMusic, 0 );
+            Mix_PlayMusic( gStory, 0 );
 		}
 		else if(game_state == WAIT_SNAPSHOT){
 			frameTimer--;
@@ -122,18 +126,47 @@ int main (int argc, char *argv[]){
 	        }*/
 	        // end debug
 
-            //TODO should return, feedback or finished etc
             int res = game.processShapes(detector.shapes);
-            if(res == 1){
-                Mix_PlayChannel( -1, gCorrect, 0 );
-                game_state = LEVEL_FINISHED;
-                LOGD("Game state: LEVEL_FINISHED");
-            }
-            else{
-                // TODO feedack audios
+            switch (res) {
+                case 0:
+                    Mix_PlayChannel( -1, gCorrect, 0 );
+                    Mix_PlayMusic( gCongr, 0 );
+                    game_state = LEVEL_FINISHED;
+                    LOGD("Game state: LEVEL_FINISHED");
+                break;
+                case 1:
+                    if(frameTimer <= 0){ // FIXME not a good way to handle feedback time
+                        Mix_PlayMusic( gAngleFb, 0 );
+                        frameTimer = 3; // 10 sec
+                    }
+                    else{
+                        frameTimer--;
+                    }
+                    LOGI("location and type correct, angle wrong");
+                break;
+                case 2:
+                    if(frameTimer <= 0){
+                        Mix_PlayMusic( gTypeFb, 0 );
+                        frameTimer = 3; // 10 sec
+                    }
+                    else{
+                        frameTimer--;
+                    }
+                    LOGI("location correct, type wrong");
+                break;
+                case 3:
+                    if(frameTimer <= 0){
+                        Mix_PlayMusic( gLocFb, 0 );
+                        frameTimer = 3; // 10 sec
+                    }
+                    else{
+                        frameTimer--;
+                    }
+                    LOGI("location wrong");
+                break;
             }
 		}
-        else if(game_state == LEVEL_FINISHED && Mix_Playing(-1) == 0){
+        else if(game_state == LEVEL_FINISHED && Mix_PlayingMusic() == 0){
             //TODO tebrikler audio
             LOGD("Level %d is cleared", game.level);
             game_state = PICKUP_SHAPES;
@@ -207,6 +240,34 @@ bool loadSounds()
 		success = false;
 	}
 
+    gCongr = Mix_LoadMUS( "sound/tebrik.mp3" ); // TODO make it generic for other levels
+    if( gCongr == NULL )
+    {
+        printf( "Failed to load sound/tebrik.mp3 SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gLocFb = Mix_LoadMUS( "sound/wrong_location1.mp3" ); // TODO make it generic for other levels
+    if( gLocFb == NULL )
+    {
+        printf( "Failed to load sound/wrong_location1.mp3 SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gTypeFb = Mix_LoadMUS( "sound/wrong_shape.mp3" ); // TODO make it generic for other levels
+    if( gTypeFb == NULL )
+    {
+        printf( "Failed to load sound/wrong_shape.mp3 SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gAngleFb = Mix_LoadMUS( "sound/wrong_angle.mp3" ); // TODO make it generic for other levels
+    if( gAngleFb == NULL )
+    {
+        printf( "Failed to load sound/wrong_angle.mp3 SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
 	return success;
 }
 
@@ -219,8 +280,16 @@ void closeSDL()
 	gWrong = NULL;
 
 	//Free the music
-	Mix_FreeMusic( gMusic );
-	gMusic = NULL;
+	Mix_FreeMusic( gStory );
+    Mix_FreeMusic( gCongr );
+    Mix_FreeMusic( gLocFb );
+    Mix_FreeMusic( gTypeFb );
+    Mix_FreeMusic( gAngleFb );
+	gStory = NULL;
+    gCongr = NULL;
+    gLocFb = NULL;
+    gTypeFb = NULL;
+    gAngleFb = NULL;
 	//Quit SDL subsystems
 	Mix_Quit();
 	SDL_Quit();
@@ -237,8 +306,8 @@ pair<Shape, string> getLevelParameters(int level){
         shape.angle = 70.0;
         filepath = "images/espas_011-intro.png";
         //Load music
-        gMusic = Mix_LoadMUS( "sound/f1.mp3" ); // TODO make it generic for other levels
-        if( gMusic == NULL )
+        gStory = Mix_LoadMUS( "sound/f1.mp3" ); // TODO make it generic for other levels
+        if( gStory == NULL )
         {
             printf( "Failed to load sound/f1.mp3! SDL_mixer Error: %s\n", Mix_GetError() );
         }
@@ -248,8 +317,8 @@ pair<Shape, string> getLevelParameters(int level){
         shape.type = STICK;
         shape.angle = 103.0;
         filepath = "images/espas_021-intro.png";
-        gMusic = Mix_LoadMUS( "sound/f2.mp3" ); // TODO make it generic for other levels
-        if( gMusic == NULL )
+        gStory = Mix_LoadMUS( "sound/f2.mp3" ); // TODO make it generic for other levels
+        if( gStory == NULL )
         {
             printf( "Failed to load sound/f1.mp3! SDL_mixer Error: %s\n", Mix_GetError() );
         }
@@ -259,8 +328,8 @@ pair<Shape, string> getLevelParameters(int level){
         shape.type = CIRCLE;
         shape.angle = -1;
         filepath = "images/espas_031-intro.png";
-        gMusic = Mix_LoadMUS( "sound/f3.mp3" ); // TODO make it generic for other levels
-        if( gMusic == NULL )
+        gStory = Mix_LoadMUS( "sound/f3.mp3" ); // TODO make it generic for other levels
+        if( gStory == NULL )
         {
             printf( "Failed to load sound/f1.mp3! SDL_mixer Error: %s\n", Mix_GetError() );
         }
@@ -270,8 +339,8 @@ pair<Shape, string> getLevelParameters(int level){
         shape.type = GREEN;
         shape.angle = 100.0;
         filepath = "images/espas_041-intro.png";
-        gMusic = Mix_LoadMUS( "sound/f4.mp3" ); // TODO make it generic for other levels
-        if( gMusic == NULL )
+        gStory = Mix_LoadMUS( "sound/f4.mp3" ); // TODO make it generic for other levels
+        if( gStory == NULL )
         {
             printf( "Failed to load sound/f1.mp3! SDL_mixer Error: %s\n", Mix_GetError() );
         }
