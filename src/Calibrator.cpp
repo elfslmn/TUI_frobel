@@ -63,3 +63,10 @@ bool Calibrator::applyHomography(vector<Shape> & shapes){
 		return false;
 	}
 }
+
+//for debug paste it to main
+/*for(Shape s : detector.shapes){
+	circle(projImage, s.center, 10, Scalar(255,255,255), 3);
+	imshow("Projector", projImage);
+}*/
+// end debug
