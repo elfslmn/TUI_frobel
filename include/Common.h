@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <ctime>
 
 using namespace std;
 using namespace cv;
@@ -40,4 +41,15 @@ enum GameState {
     IN_LEVEL,
     LEVEL_FINISHED,
     PICKUP_SHAPES
+};
+
+enum FeedbackType{
+    WRONG_LOCATION,
+    WRONG_SHAPE,
+    WRONG_ANGLE
+};
+
+struct Feedback{
+    FeedbackType type;
+    time_t time;
 };

@@ -47,6 +47,7 @@ set(
   ${INCLUDE_DIR}/Common.h
   ${INCLUDE_DIR}/Params.h
   ${INCLUDE_DIR}/Game.h
+  ${INCLUDE_DIR}/AudioPlayer.h
 )
 
 set(
@@ -55,6 +56,7 @@ set(
   ${SRC_DIR}/Calibrator.cpp
   ${SRC_DIR}/Util.cpp
   ${SRC_DIR}/Game.cpp
+  ${SRC_DIR}/AudioPlayer.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)
