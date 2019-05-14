@@ -9,16 +9,19 @@
 using namespace std;
 using namespace cv;
 
-//Helper methods;
-pair<Shape, string> getLevelParameters(int level);
-void giveFeedback(int feedback_id);
-
 //Global variables
 int frameTimer;
 GameState game_state; // NOTE can be a part of game class
 Game game;
 AudioPlayer audio;
+VideoCapture gif;
+Mat animation;
 int level = 1;
+
+//Helper methods;
+pair<Shape, string> getLevelParameters(int level);
+void giveFeedback(int feedback_id);
+void playConfettiAnimation(bool loop);
 
 int main (int argc, char *argv[]){
     // Parse options
@@ -107,11 +110,13 @@ int main (int argc, char *argv[]){
                 LOGD("Game state: LEVEL_FINISHED");
             }
 		}
-        else if(game_state == LEVEL_FINISHED && Mix_PlayingMusic() == 0){
-            //TODO tebrikler audio
-            LOGD("Level %d is cleared", game.level);
-            game_state = PICKUP_SHAPES;
-            LOGD("Game state: PICKUP_SHAPES");
+        else if(game_state == LEVEL_FINISHED){
+            //LOGD("Level %d is cleared", game.level);
+            playConfettiAnimation(true);
+            if(Mix_PlayingMusic() == 0){
+                game_state = PICKUP_SHAPES;
+                LOGD("Game state: PICKUP_SHAPES");
+            }
         }
         else if(game_state == PICKUP_SHAPES){
             // TODO tasları al audio
@@ -224,5 +229,15 @@ void giveFeedback(int feedback_id){
             }
             LOGI("no object");
         break;
+    }
+}
+
+void playConfettiAnimation(bool loop){
+    gif >> animation;
+    if(!animation.empty()){
+        imshow("Projector", animation);
+    }
+    else if(loop){
+        gif = VideoCapture("gifs/confetti.gif");
     }
 }
