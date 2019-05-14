@@ -11,10 +11,14 @@ using namespace cv;
 
 //Helper methods;
 pair<Shape, string> getLevelParameters(int level);
+void giveFeedback(int feedback_id);
 
 //Global variables
-static int frameTimer;
-static GameState game_state; // NOTE can be a part of game class
+int frameTimer;
+GameState game_state; // NOTE can be a part of game class
+Game game;
+AudioPlayer audio;
+int level = 1;
 
 int main (int argc, char *argv[]){
     // Parse options
@@ -40,9 +44,6 @@ int main (int argc, char *argv[]){
     LOGD("Game state: CALIBRATING");
 
     Detector detector;
-    Game game;
-    int level = 1;
-    AudioPlayer audio;
 
     // open camera
     int camId = 0;
@@ -99,44 +100,11 @@ int main (int argc, char *argv[]){
 			detector.processFrame(frame);
             calibrator.applyHomography(detector.shapes);
 
-            int res = game.processShapes(detector.shapes);
-            switch (res) {
-                case 0:
-                    audio.playCorrectSound();
-                    audio.playCongratulations();
-                    game_state = LEVEL_FINISHED;
-                    LOGD("Game state: LEVEL_FINISHED");
-                break;
-                case 1:
-                    if(frameTimer <= 0){ // FIXME not a good way to handle feedback time
-                        audio.playAngleFeedback();
-                        frameTimer = 3; // 10 sec
-                    }
-                    else{
-                        frameTimer--;
-                    }
-                    LOGI("location and type correct, angle wrong");
-                break;
-                case 2:
-                    if(frameTimer <= 0){
-                        audio.playTypeFeedback();
-                        frameTimer = 3; // 10 sec
-                    }
-                    else{
-                        frameTimer--;
-                    }
-                    LOGI("location correct, type wrong");
-                break;
-                case 3:
-                    if(frameTimer <= 0){
-                        audio.playLocationFeedback(game.level);
-                        frameTimer = 3; // 10 sec
-                    }
-                    else{
-                        frameTimer--;
-                    }
-                    LOGI("location wrong");
-                break;
+            int feedback = game.processShapes(detector.shapes);
+            giveFeedback(feedback);
+            if(feedback == 0){
+                game_state = LEVEL_FINISHED;
+                LOGD("Game state: LEVEL_FINISHED");
             }
 		}
         else if(game_state == LEVEL_FINISHED && Mix_PlayingMusic() == 0){
@@ -207,4 +175,54 @@ pair<Shape, string> getLevelParameters(int level){
         break;
     }
     return {shape, filepath};
+}
+
+void giveFeedback(int feedback_id){
+    switch (feedback_id) {
+        case 0:
+            audio.playCorrectSound();
+            audio.playCongratulations();
+        break;
+        case 1:
+            if(frameTimer <= 0){ // FIXME not a good way to handle feedback time
+                audio.playAngleFeedback();
+                frameTimer = 3; // 10 sec
+            }
+            else{
+                frameTimer--;
+            }
+            LOGI("location and type correct, angle wrong");
+        break;
+        case 2:
+            if(frameTimer <= 0){
+                audio.playTypeFeedback();
+                frameTimer = 3; // 10 sec
+            }
+            else{
+                frameTimer--;
+            }
+            LOGI("location correct, type wrong");
+        break;
+        case 3:
+            if(frameTimer <= 0){
+                audio.playLocationFeedback(game.level);
+                frameTimer = 3; // 10 sec
+            }
+            else{
+                frameTimer--;
+            }
+            LOGI("location wrong");
+        break;
+
+        case 4:
+            if(frameTimer <= 0){
+                audio.playNoObjectFeedback(game.level);
+                frameTimer = 3; // 10 sec
+            }
+            else{
+                frameTimer--;
+            }
+            LOGI("no object");
+        break;
+    }
 }

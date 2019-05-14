@@ -12,6 +12,7 @@ public:
     void playLocationFeedback(int level);
     void playTypeFeedback();
     void playAngleFeedback();
+	void playNoObjectFeedback(int level);
     void playCongratulations();
     void playCorrectSound();
     void playWrongSound();
@@ -23,6 +24,7 @@ private:
 	// 1 indexed, 0 empty, level dependent audios
     vector<Mix_Music*> stories = vector<Mix_Music*>(Params::levelCount + 1, NULL);
     vector<Mix_Music*> location_fbs = vector<Mix_Music*>(Params::levelCount + 1, NULL);
+	vector<deque<Mix_Music*>> no_object_fbs = vector<deque<Mix_Music*>>(Params::levelCount + 1);
 
 	// level independent audios
     deque<Mix_Music*> type_fbs;

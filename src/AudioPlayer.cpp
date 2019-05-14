@@ -36,22 +36,19 @@ void AudioPlayer::loadSounds(){
         LOGE( "%s", Mix_GetError() );
     }
 
+    Mix_Music* temp = NULL;
+
     for(int i=1; i<= Params::levelCount; i++){
         stories[i] = Mix_LoadMUS( ("sound/f"+to_string(i)+".mp3").c_str());
-        location_fbs[i] = Mix_LoadMUS( ("sound/wrong_location"+to_string(i)+".mp3").c_str());
-        if(!(stories[i] && location_fbs[i])){
-            LOGE( "%s",Mix_GetError() );
-        }
-    }
+        if(!stories[i]) LOGE( "%s",Mix_GetError() );
 
-    Mix_Music* temp = NULL;
-    for(int i=1; i<=4; i++){
-        temp = Mix_LoadMUS( ("sound/wrong_type"+to_string(i)+".mp3").c_str());
-        if(temp == NULL){
-            LOGE( "%s",Mix_GetError() );
-        }
-        else{
-            type_fbs.push_back(temp);
+        location_fbs[i] = Mix_LoadMUS( ("sound/wrong_location"+to_string(i)+".mp3").c_str());
+        if(!location_fbs[i]) LOGE( "%s",Mix_GetError() );
+
+        for(int j=1; j<=4; j++){
+            temp = Mix_LoadMUS( ("sound/no_object_"+to_string(i)+"_"+to_string(j)+".mp3").c_str());
+            if(temp) no_object_fbs[i].push_back(temp);
+            else LOGE( "%s",Mix_GetError() );
         }
     }
 
@@ -154,4 +151,13 @@ void AudioPlayer::playAngleFeedback(){
     // put recently played to the last
     angle_fbs.pop_front();
     angle_fbs.push_back(music);
+}
+
+void AudioPlayer::playNoObjectFeedback(int level){
+    Mix_Music* music = no_object_fbs[level].front();
+    Mix_PlayMusic(music, 0 );
+
+    // put recently played to the last
+    no_object_fbs[level].pop_front();
+    no_object_fbs[level].push_back(music);
 }
