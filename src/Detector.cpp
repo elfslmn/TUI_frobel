@@ -201,9 +201,78 @@ void Detector::processFrobel(vector<vector<Point> > & contours){
 
 }
 
+double angleOfHipotenus(Point2f p0, Point2f p1, Point2f p2, Mat & debug){
+    double d_01 = norm(p0-p1);
+    double d_12 = norm(p1-p2);
+    double d_20 = norm(p2-p0);
+    Point ptStart, ptEnd, ptFar;
+    if(d_20 >= max(d_01, d_12)){ // p0-p2 hipotenus
+        ptStart = p2;
+        ptEnd = p0;
+        ptFar = p1;
+    }
+    else if(d_01 >= max(d_12, d_20)){
+        ptStart = p0;
+        ptEnd = p1;
+        ptFar = p2;
+    }
+    else{
+        ptStart = p1;
+        ptEnd = p2;
+        ptFar = p0;
+    }
+
+    line( debug, ptStart, ptEnd, CV_RGB(255,255,0), 2 );
+    line( debug, (ptStart+ptEnd)/2, ptFar, CV_RGB(255,255,0), 2 );
+    circle( debug, ptStart, 4, Scalar(255,0,0), 2 );
+    circle( debug, ptEnd, 4, Scalar(255,0,255), 2 );
+
+    double y_diff = (ptEnd.y - ptStart.y)*-1; // *-1 since y coordinate is different in opencv
+    double x_diff = ptEnd.x - ptStart.x;
+    double angle = atan2(y_diff, x_diff) * 180 / PI;
+    if(angle < 0) angle += 360;
+
+    Util::drawText(debug, to_string(angle) , ptFar);
+    return angle;
+}
+
+double angleOfParallelogram(vector<Point> & vertices, Mat & debug){
+    double y_diff, x_diff;
+    if(norm(vertices[0] - vertices[2]) > norm(vertices[1] - vertices[3]) ){
+        y_diff = (vertices[0].y - vertices[2].y)*-1; // *-1 since y coordinate is different in opencv
+        x_diff = vertices[0].x - vertices[2].x;
+    }
+    else{
+        y_diff = (vertices[1].y - vertices[3].y)*-1; // *-1 since y coordinate is different in opencv
+        x_diff = vertices[1].x - vertices[3].x;
+    }
+    double angle = atan2(y_diff, x_diff) * 180 / PI;
+    if(angle < 0) angle += 180;
+    Util::drawText(debug, to_string(angle) , vertices[1]);
+    return angle;
+}
+
+double angleOfSquare(vector<Point> & vertices, Mat & debug){
+    double y_diff, x_diff;
+    y_diff = (vertices[0].y - vertices[2].y)*-1; // *-1 since y coordinate is different in opencv
+    x_diff = vertices[0].x - vertices[2].x;
+    double angle = atan2(y_diff, x_diff) * 180 / PI;
+    angle = fmod(angle, 90);
+    Util::drawText(debug, to_string(angle) , vertices[1]);
+    return angle;
+
+}
+
 void Detector::processTangram(vector<vector<Point> > & contours){
     for( unsigned int i = 0; i< contours.size(); i++ )
     {
+        /*rectangle(debug, boundingRect(contours[i]), Scalar(172,22,222),3);
+        // Image edge intersection check
+        if(Util::isIntersectWithEdge(contours[i], debug.rows, debug.cols)){
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            cout << "rejected" << endl;
+            continue; // reject contour
+        }*/
         // Area check
         double area = contourArea(contours[i]);
         if(area > 100 && area <  2000){
@@ -223,56 +292,89 @@ void Detector::processTangram(vector<vector<Point> > & contours){
 
         // Corner count check
         double epsilon = 0.05*perim ;
-        vector<Point> approx;
+        vector<Point> approx;  // it gives points in ccw direction
         approxPolyDP(contours[i], approx, epsilon, true);
-        for( unsigned int j = 0; j< approx.size(); j++ ){
-           circle(debug, approx[j], 2, Scalar(255,0,0), -1, 8, 0 );
+
+        // Convexivity defect check
+        vector<int> hull_indices;
+        vector<cv::Vec4i> defects;
+        convexHull(approx, hull_indices);
+        convexityDefects(approx, hull_indices, defects);
+        bool hasDefect = false;
+        double angle = -1;
+        for(int j=0; j< defects.size(); j++){
+            float depth = defects[j][3]/256;
+            if(depth >= Params::minDefectDepth){
+                hasDefect = true;
+                break;
+            }
+        }
+        if(hasDefect){ // reject contour
+            drawContours( debug , contours, i, Scalar(0,0,255),2);
+            continue;
         }
 
+        // Identify shapes
         if(approx.size() == 3){ // triangle
+            double angle = angleOfHipotenus(approx[0], approx[1], approx[2], debug);
+            Point center =  (approx[0] + approx[1] + approx[2]) / 3;
             if(300 <= area && area <= 550 && 70 <= perim && perim <= 100){
                 Util::drawText(debug, "GRN" , approx[0]);
+                shapes.push_back(Shape(GREEN, center, angle));
             }
             else if(500 <= area && area <= 1100 && 100 <= perim && perim <= 140){
                 Util::drawText(debug, "ORG" , approx[0]);
+                shapes.push_back(Shape(ORANGE, center, angle));
             }
             else if(1400 <= area && area <= 2000 && 170 <= perim && perim <= 220){
                 Util::drawText(debug, "RED" , approx[0]);
+                shapes.push_back(Shape(RED, center, angle));
             }
             else{ // rejected triangle
                 Util::drawText(debug, "R_TRI" , approx[0]);
                 drawContours( debug , contours, i, Scalar(0,0,255),2);
             }
-            Util::drawText(debug, to_string(area) , approx[1]);
-            Util::drawText(debug, to_string(perim), approx[2]);
         }
         else if(approx.size() == 4){
             // TODO square and parallegrom is not clear. Find difference !!
             if(720 <= area && area <= 950 && 120 <= perim && perim <= 150){
                 Util::drawText(debug, "BLU" , approx[0]);
+                double angle = angleOfParallelogram(approx, debug);
+                Point center = (approx[0] + approx[1] + approx[2] + approx[3]) / 4;
+                shapes.push_back(Shape(PARALLEL, center, angle));
             }
             else if(400 <= area && area <= 820 && 75 <= perim && perim <= 120){
                 Util::drawText(debug, "YEL" , approx[0]);
+                double angle = angleOfSquare(approx, debug);
+                Point center = (approx[0] + approx[1] + approx[2] + approx[3]) / 4;
+                shapes.push_back(Shape(SQUARE, center, angle));
             }
             else{ // rejected square
                 Util::drawText(debug, "R_SQR" , approx[0]);
                 drawContours( debug , contours, i, Scalar(0,0,255),2);
             }
-            Util::drawText(debug, to_string(area) , approx[1]);
-            Util::drawText(debug, to_string(perim), approx[2]);
 
         }
         else if(approx.size() == 5){ // square has extra corner sometimes due to noise
             if(400 <= area && area <= 820 && 75 <= perim && perim <= 120){
                 Util::drawText(debug, "YEL" , approx[0]);
+                // TODO angle ??
             }
-            Util::drawText(debug, to_string(area) , approx[1]);
-            Util::drawText(debug, to_string(perim), approx[2]);
         }
         else{
             drawContours( debug , contours, i, Scalar(0,0,255),2);
             continue;
         }
+
+        // for debug
+        //Util::drawText(debug, to_string(area) , approx[1]);
+        //Util::drawText(debug, to_string(perim), approx[2]);
+
+        /*for( unsigned int j = 0; j< approx.size(); j++ ){
+           circle(debug, approx[j], 2, Scalar(255,0,0), -1, 8, 0 );
+           Util::drawText(debug, to_string(j), approx[j]);
+       }*/
+        // end debug
 
         // Check color percentages
         /*Mat mask = Mat::zeros(diff.rows, diff.cols, CV_8UC1);
