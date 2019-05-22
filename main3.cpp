@@ -37,7 +37,10 @@ int main (int argc, char *argv[]){
     // windows
     namedWindow ("Projector", WINDOW_NORMAL);
     namedWindow ("Camera", WINDOW_NORMAL);
-    //setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+    namedWindow ("Snapshot", WINDOW_NORMAL);
+    namedWindow ("Debug", WINDOW_NORMAL);
+    namedWindow ("Diff", WINDOW_NORMAL);
+    setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
     moveWindow("Projector", 1366, 0); // 1366 width of my pc screen
 
     //initialization
@@ -152,31 +155,31 @@ pair<Shape, string> getLevelParameters(int level){
     string filepath;
     switch (level) {
         case 1:
-        shape.center = Point2f(0.537 * Params::projector_width , 0.723 * Params::projector_height );
+        shape.center = Point2f(695, 468);
         shape.type = GREEN;
         shape.angle = 70.0;
-        filepath = "images/espas_011-intro.png";
+        filepath = "images/episode1.png";
         break;
 
         case 2:
-        shape.center = Point2f(0.585 * Params::projector_width , 0.519 * Params::projector_height );
+        shape.center = Point2f(780 , 250);
         shape.type = STICK;
         shape.angle = 103.0;
-        filepath = "images/espas_021-intro.png";
+        filepath = "images/episode2.png";
         break;
 
         case 3:
-        shape.center = Point2f(0.622 * Params::projector_width , 0.869 * Params::projector_height );
+        shape.center = Point2f(812, 530);
         shape.type = CIRCLE;
         shape.angle = -1;
-        filepath = "images/espas_031-intro.png";
+        filepath = "images/episode3.png";
         break;
 
         case 4:
-        shape.center = Point2f(0.376 * Params::projector_width , 0.846 * Params::projector_height );
+        shape.center = Point2f(450, 590);
         shape.type = GREEN;
         shape.angle = 100.0;
-        filepath = "images/espas_041-intro.png";
+        filepath = "images/episode4.png";
         break;
     }
     return {shape, filepath};
