@@ -62,6 +62,16 @@ void AudioPlayer::loadSounds(){
         }
     }
 
+    for(int i=1; i<=4; i++){
+        temp = Mix_LoadMUS( ("sound/wrong_type"+to_string(i)+".mp3").c_str());
+        if(temp == NULL){
+            LOGE( "%s",Mix_GetError() );
+        }
+        else{
+            type_fbs.push_back(temp);
+        }
+    }
+
 }
 
 void AudioPlayer::closeSDL(){
