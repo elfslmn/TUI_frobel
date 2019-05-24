@@ -153,35 +153,73 @@ int main (int argc, char *argv[]){
 pair<Shape, string> getLevelParameters(int level){
     Shape shape;
     string filepath;
-    switch (level) {
-        case 1:
-        shape.center = Point2f(695, 468);
-        shape.type = GREEN;
-        shape.angle = 70.0;
-        filepath = "images/episode1.png";
-        break;
+    if(Params::game_mode == FROBEL){
+        switch (level) {
+            case 1:
+            shape.center = Point2f(695, 468);
+            shape.type = GREEN;
+            shape.angle = 70.0;
+            filepath = "images/episode1.png";
+            break;
 
-        case 2:
-        shape.center = Point2f(780 , 250);
-        shape.type = STICK;
-        shape.angle = 103.0;
-        filepath = "images/episode2.png";
-        break;
+            case 2:
+            shape.center = Point2f(780 , 250);
+            shape.type = STICK;
+            shape.angle = 103.0;
+            filepath = "images/episode2.png";
+            break;
 
-        case 3:
-        shape.center = Point2f(812, 530);
-        shape.type = CIRCLE;
-        shape.angle = -1;
-        filepath = "images/episode3.png";
-        break;
+            case 3:
+            shape.center = Point2f(812, 530);
+            shape.type = CIRCLE;
+            shape.angle = -1;
+            filepath = "images/episode3.png";
+            break;
 
-        case 4:
-        shape.center = Point2f(450, 590);
-        shape.type = GREEN;
-        shape.angle = 100.0;
-        filepath = "images/episode4.png";
-        break;
+            case 4:
+            shape.center = Point2f(450, 590);
+            shape.type = GREEN;
+            shape.angle = 100.0;
+            filepath = "images/episode4.png";
+            break;
+        }
     }
+    else if(Params::game_mode == TANGRAM){
+        switch (level) {
+            case 1:
+            shape.center = Point2f(621, 425);
+            shape.type = GREEN;
+            shape.angle = 102.0;
+            filepath = "images/tangram1.png";
+            break;
+
+            case 2:
+            shape.center = Point2f(530 , 271);
+            shape.type = PARALLEL;
+            shape.angle = 173.0;
+            filepath = "images/tangram2.png";
+            break;
+
+            case 3:
+            shape.center = Point2f(861, 461);
+            shape.type = SQUARE;
+            shape.angle = 45.0;
+            filepath = "images/tangram3.png";
+            break;
+
+            case 4:
+            shape.center = Point2f(335, 428);
+            shape.type = GREEN;
+            shape.angle = 350.0;
+            filepath = "images/tangram4.png";
+            break;
+        }
+    }
+    else{
+        LOGE("Undefined game mode");
+        assert(false);
+    }
+
     return {shape, filepath};
 }
 

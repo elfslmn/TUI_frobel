@@ -24,6 +24,8 @@ int Game::processShapes(vector<Shape> & shapes){
 
         if(norm(shape.center - correctShape.center) < 50){
             if(shape.type == correctShape.type ){
+                //if((((int)correctShape.angle - 20)%360) < shape.angle &&
+                //                     shape.angle < (((int)correctShape.angle + 20)%360)){
                 if(abs(((int)(shape.angle - correctShape.angle)) % 360 ) < 20){
                     feedback = 0;
                     break;
