@@ -115,7 +115,8 @@ int main (int argc, char *argv[]){
 		}
         else if(game_state == LEVEL_FINISHED){
             //LOGD("Level %d is cleared", game.level);
-            playConfettiAnimation(true);
+            //playConfettiAnimation(true);
+            imshow("Projector", animation);
             if(Mix_PlayingMusic() == 0){
                 game_state = PICKUP_SHAPES;
                 LOGD("Game state: PICKUP_SHAPES");
@@ -160,6 +161,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = GREEN;
             shape.angle = 70.0;
             filepath = "images/episode1.png";
+            animation = imread("images/episode1f.png");
             break;
 
             case 2:
@@ -167,6 +169,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = STICK;
             shape.angle = 103.0;
             filepath = "images/episode2.png";
+            animation = imread("images/episode2f.png");
             break;
 
             case 3:
@@ -174,6 +177,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = CIRCLE;
             shape.angle = -1;
             filepath = "images/episode3.png";
+            animation = imread("images/episode3f.png");
             break;
 
             case 4:
@@ -181,6 +185,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = GREEN;
             shape.angle = 100.0;
             filepath = "images/episode4.png";
+            animation = imread("images/episode4f.png");
             break;
         }
     }
@@ -191,6 +196,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = GREEN;
             shape.angle = 102.0;
             filepath = "images/tangram1.png";
+            animation = imread("images/tangram1f.png");
             break;
 
             case 2:
@@ -198,6 +204,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = PARALLEL;
             shape.angle = 173.0;
             filepath = "images/tangram2.png";
+            animation = imread("images/tangram2f.png");
             break;
 
             case 3:
@@ -205,6 +212,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = SQUARE;
             shape.angle = 45.0;
             filepath = "images/tangram3.png";
+            animation = imread("images/tangram3f.png");
             break;
 
             case 4:
@@ -212,6 +220,7 @@ pair<Shape, string> getLevelParameters(int level){
             shape.type = GREEN;
             shape.angle = 350.0;
             filepath = "images/tangram4.png";
+            animation = imread("images/tangram4f.png");
             break;
         }
     }
