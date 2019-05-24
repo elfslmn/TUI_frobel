@@ -176,19 +176,17 @@ void Detector::processFrobel(vector<vector<Point> > & contours){
         {
             double perim = rr.size.height + rr.size.width;
             //cout << perim << endl;
-            if(perim < 95 && defectDepth > 12 && defectDepth < 22){
+            if(perim < 100 && defectDepth > 12 && defectDepth < 22){
                 Util::drawText(debug, "GRN" , rr.center);
                 shapes.push_back(Shape(GREEN, rr.center, angle));
             }
-            else if(perim >= 90 && perim <= 120 && defectDepth > 25 && defectDepth <= 34){
+            else if(perim >= 95 && perim <= 120 && defectDepth > 25 && defectDepth <= 34){
                 Util::drawText(debug, "ORG" , rr.center);
                 shapes.push_back(Shape(ORANGE, rr.center, angle));
             }
             else if(perim >= 121 && perim <= 170 && defectDepth >= 34 && defectDepth < 47){
                 Util::drawText(debug, "RED" , rr.center);
                 shapes.push_back(Shape(RED, rr.center, angle));
-                /* TODO green+stick or green+green can be detected as red sometimes
-                 you can check the defect lenght or angle of the defect*/
             }
             else{
                 drawContours( debug , contours, i, Scalar(0,0,255),2);

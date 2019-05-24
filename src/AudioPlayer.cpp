@@ -38,19 +38,42 @@ void AudioPlayer::loadSounds(){
 
     Mix_Music* temp = NULL;
 
-    for(int i=1; i<= Params::levelCount; i++){
-        stories[i] = Mix_LoadMUS( ("sound/f"+to_string(i)+".mp3").c_str());
-        if(!stories[i]) LOGE( "%s",Mix_GetError() );
+    if(Params::game_mode == FROBEL){
+        // level specific sounds
+        for(int i=1; i<= Params::levelCount; i++){
+            stories[i] = Mix_LoadMUS( ("sound/f"+to_string(i)+".mp3").c_str());
+            if(!stories[i]) LOGE( "%s",Mix_GetError() );
 
-        location_fbs[i] = Mix_LoadMUS( ("sound/wrong_location"+to_string(i)+".mp3").c_str());
-        if(!location_fbs[i]) LOGE( "%s",Mix_GetError() );
+            location_fbs[i] = Mix_LoadMUS( ("sound/wrong_location"+to_string(i)+".mp3").c_str());
+            if(!location_fbs[i]) LOGE( "%s",Mix_GetError() );
 
-        for(int j=1; j<=4; j++){
-            temp = Mix_LoadMUS( ("sound/no_object_"+to_string(i)+"_"+to_string(j)+".mp3").c_str());
-            if(temp) no_object_fbs[i].push_back(temp);
-            else LOGE( "%s",Mix_GetError() );
+            for(int j=1; j<=4; j++){
+                temp = Mix_LoadMUS( ("sound/no_object_"+to_string(i)+"_"+to_string(j)+".mp3").c_str());
+                if(temp) no_object_fbs[i].push_back(temp);
+                else LOGE( "%s",Mix_GetError() );
+            }
         }
     }
+    else if(Params::game_mode == TANGRAM){
+        for(int i=1; i<= Params::levelCount; i++){
+            stories[i] = Mix_LoadMUS( ("sound/T"+to_string(i)+".mp3").c_str());
+            if(!stories[i]) LOGE( "%s",Mix_GetError() );
+
+            location_fbs[i] = Mix_LoadMUS( ("sound/t_wrong_location"+to_string(i)+".mp3").c_str());
+            if(!location_fbs[i]) LOGE( "%s",Mix_GetError() );
+
+            for(int j=1; j<=4; j++){
+                temp = Mix_LoadMUS( ("sound/t_no_object_"+to_string(i)+"_"+to_string(j)+".mp3").c_str());
+                if(temp) no_object_fbs[i].push_back(temp);
+                else LOGE( "%s",Mix_GetError() );
+            }
+        }
+    }
+    else{
+        LOGE("Undefinded game mode");
+        assert(false);
+    }
+
 
     for(int i=1; i<=4; i++){
         temp = Mix_LoadMUS( ("sound/wrong_angle"+to_string(i)+".mp3").c_str());
