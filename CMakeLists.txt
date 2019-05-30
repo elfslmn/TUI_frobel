@@ -48,6 +48,7 @@ set(
   ${INCLUDE_DIR}/Params.h
   ${INCLUDE_DIR}/Game.h
   ${INCLUDE_DIR}/AudioPlayer.h
+  ${INCLUDE_DIR}/Reporter.h
 )
 
 set(
@@ -57,6 +58,7 @@ set(
   ${SRC_DIR}/Util.cpp
   ${SRC_DIR}/Game.cpp
   ${SRC_DIR}/AudioPlayer.cpp
+  ${SRC_DIR}/Reporter.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)

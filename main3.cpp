@@ -2,9 +2,8 @@
 #include "Calibrator.h"
 #include "Game.h"
 #include "AudioPlayer.h"
+#include "Reporter.h"
 #include <cxxopts.hpp>
-#include <SDL2/SDL.h>
-#include <SDL_mixer.h>
 
 using namespace std;
 using namespace cv;
@@ -18,6 +17,10 @@ VideoCapture gif;
 Mat animation;
 int level = 1;
 
+string childName = "Child";
+int childAge = 0;
+Reporter reporter;
+
 //Helper methods;
 pair<Shape, string> getLevelParameters(int level);
 void giveFeedback(int feedback_id);
@@ -29,10 +32,17 @@ int main (int argc, char *argv[]){
     options
     .allow_unrecognised_options()
     .add_options()
-    ("c", "Camera", cxxopts::value<int>(), "camera");
+    ("c", "Camera", cxxopts::value<int>(), "camera")
+    ("n", "Name", cxxopts::value<string>(), "name and surname")
+    ("a", "Age", cxxopts::value<int>(), "age");
     cout << options.help() << endl;
     cout << "Press 'ESC' for exit" << endl << endl;
     auto result = options.parse(argc, argv);
+
+    if (result.count("n")) childName = result["n"].as<std::string>();
+    if (result.count("a")) childAge = result["a"].as<int>();
+    cout << "Child: " << childName << "\t Age:" << childAge << endl;
+    reporter = Reporter(childName, childAge);
 
     // windows
     namedWindow ("Projector", WINDOW_NORMAL);
@@ -87,6 +97,7 @@ int main (int argc, char *argv[]){
 			LOGD("Game state: WAIT_SNAPSHOT");
 
             audio.playStory(game.level);
+            reporter.addLevelStartingLog(game.level);
 		}
 		else if(game_state == WAIT_SNAPSHOT){
 			frameTimer--;
@@ -107,10 +118,13 @@ int main (int argc, char *argv[]){
             calibrator.applyHomography(detector.shapes);
 
             int feedback = game.processShapes(detector.shapes);
-            giveFeedback(feedback);
+            if(feedback  != -1){
+                giveFeedback(feedback);
+            }
             if(feedback == 0){
                 game_state = LEVEL_FINISHED;
                 LOGD("Game state: LEVEL_FINISHED");
+                reporter.addLevelEndingLog(game.level);
             }
 		}
         else if(game_state == LEVEL_FINISHED){
@@ -130,10 +144,14 @@ int main (int argc, char *argv[]){
         // Handle key presses
         char key = (char) waitKey(30);
         if(key == 'p') {key = (char) waitKey();}
-        if (key == 'q' || key == 27) {break;}
+        if (key == 'q' || key == 27) {
+            reporter.saveReport(false);
+            break;
+        }
         if(key == 83 && game_state == PICKUP_SHAPES){
             if(game.level == Params::levelCount){
                 LOGD("All levels are cleared");
+                reporter.saveReport(true);
                 // TODO game finished audio, show results
                 break;
             }
@@ -242,6 +260,7 @@ void giveFeedback(int feedback_id){
             if(frameTimer <= 0){ // FIXME not a good way to handle feedback time
                 audio.playAngleFeedback();
                 frameTimer = 3; // 10 sec
+                reporter.addFeedbackLog(1);
             }
             else{
                 frameTimer--;
@@ -252,6 +271,7 @@ void giveFeedback(int feedback_id){
             if(frameTimer <= 0){
                 audio.playTypeFeedback();
                 frameTimer = 3; // 10 sec
+                reporter.addFeedbackLog(2);
             }
             else{
                 frameTimer--;
@@ -262,6 +282,7 @@ void giveFeedback(int feedback_id){
             if(frameTimer <= 0){
                 audio.playLocationFeedback(game.level);
                 frameTimer = 3; // 10 sec
+                reporter.addFeedbackLog(3);
             }
             else{
                 frameTimer--;
@@ -273,6 +294,7 @@ void giveFeedback(int feedback_id){
             if(frameTimer <= 0){
                 audio.playNoObjectFeedback(game.level);
                 frameTimer = 3; // 10 sec
+                reporter.addFeedbackLog(4);
             }
             else{
                 frameTimer--;
