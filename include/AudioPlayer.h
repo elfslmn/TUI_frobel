@@ -16,6 +16,7 @@ public:
     void playCongratulations();
     void playCorrectSound();
     void playWrongSound();
+	void resetFeedbackIndices();
 
 private:
     void initSDL();
@@ -24,14 +25,18 @@ private:
 	// 1 indexed, 0 empty, level dependent audios
     vector<Mix_Music*> stories = vector<Mix_Music*>(Params::levelCount + 1, NULL);
     vector<Mix_Music*> location_fbs = vector<Mix_Music*>(Params::levelCount + 1, NULL);
-	vector<deque<Mix_Music*>> no_object_fbs = vector<deque<Mix_Music*>>(Params::levelCount + 1);
+	vector<vector<Mix_Music*>> no_object_fbs = vector<vector<Mix_Music*>>(Params::levelCount + 1);
 
 	// level independent audios
-    deque<Mix_Music*> type_fbs;
-    deque<Mix_Music*> angle_fbs;
+    vector<Mix_Music*> type_fbs;
+    vector<Mix_Music*> angle_fbs;
 
     Mix_Music* congratulations = NULL;
     Mix_Chunk *correctSound = NULL;  // NOTE chunk only works with wav files
     Mix_Chunk *wrongSound = NULL;
+
+	int no_object_idx = 0;
+	int type_idx = 0;
+	int angle_idx = 0;
 
 };

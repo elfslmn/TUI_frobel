@@ -168,29 +168,28 @@ void AudioPlayer::playCongratulations(){
 }
 
 void AudioPlayer::playTypeFeedback(){
-    Mix_Music* music = type_fbs.front();
+    if(type_idx >= type_fbs.size()) return;
+    Mix_Music* music = type_fbs[type_idx];
     Mix_PlayMusic(music, 0 );
-
-    // put recently played to the last
-    type_fbs.pop_front();
-    type_fbs.push_back(music);
-    // NOTE feedback may have to given in order, ask elif
+    type_idx ++;
 }
 
 void AudioPlayer::playAngleFeedback(){
-    Mix_Music* music = angle_fbs.front();
+    if(angle_idx >= angle_fbs.size()) return;
+    Mix_Music* music = angle_fbs[angle_idx];
     Mix_PlayMusic(music, 0 );
-
-    // put recently played to the last
-    angle_fbs.pop_front();
-    angle_fbs.push_back(music);
+    angle_idx ++;
 }
 
 void AudioPlayer::playNoObjectFeedback(int level){
-    Mix_Music* music = no_object_fbs[level].front();
+    if(no_object_idx >= no_object_fbs[level].size()) return;
+    Mix_Music* music = no_object_fbs[level][no_object_idx];
     Mix_PlayMusic(music, 0 );
+    no_object_idx ++;
+}
 
-    // put recently played to the last
-    no_object_fbs[level].pop_front();
-    no_object_fbs[level].push_back(music);
+void AudioPlayer::resetFeedbackIndices(){
+    no_object_idx = 0;
+    type_idx = 0;
+    angle_idx = 0;
 }

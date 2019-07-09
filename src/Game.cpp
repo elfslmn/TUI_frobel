@@ -10,6 +10,7 @@ Game::Game(int level, Shape correctShape, string imagepath, Mat & projImage){
     resize(projImage,projImage,Size(Params::projector_width ,Params::projector_height));
 
     memset(feedbackCounter, 0, sizeof(feedbackCounter));
+    feedbackCounter[4] = -150; // no object feedback
     LOGD("Game object initialized: Level: %d", level);
 }
 
@@ -44,9 +45,13 @@ int Game::processShapes(vector<Shape> & shapes){
     }
     feedbackCounter[feedback]++;
     for(int i=0; i<5; i++){
-        if(feedbackCounter[i] >= 10*(i+1)){ // onemsiz feedbacki daha gec ver
+        if(feedbackCounter[i] >= 10){ // onemsiz feedbacki daha gec ver
             LOGD("Feedback %d is sent",i);
             memset(feedbackCounter, 0, sizeof(feedbackCounter));
+            feedbackCounter[4] = -150; // wait no_object feedback more
+
+            //recently given feedback will be waited more
+            feedbackCounter[i] = -90;
             return i;
         }
     }

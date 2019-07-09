@@ -158,6 +158,8 @@ int main (int argc, char *argv[]){
             else{
                 level++;
                 detector.resetSnapshot();
+                audio.resetFeedbackIndices();
+                frameTimer = 3;
                 game_state = NEW_GAME;
                 LOGD("Game state: NEW_GAME");
             }
@@ -257,48 +259,24 @@ void giveFeedback(int feedback_id){
             audio.playCongratulations();
         break;
         case 1:
-            if(frameTimer <= 0){ // FIXME not a good way to handle feedback time
-                audio.playAngleFeedback();
-                frameTimer = 3; // 10 sec
-                reporter.addFeedbackLog(1);
-            }
-            else{
-                frameTimer--;
-            }
+            audio.playAngleFeedback();
+            reporter.addFeedbackLog(1);
             LOGI("location and type correct, angle wrong");
         break;
         case 2:
-            if(frameTimer <= 0){
-                audio.playTypeFeedback();
-                frameTimer = 3; // 10 sec
-                reporter.addFeedbackLog(2);
-            }
-            else{
-                frameTimer--;
-            }
+            audio.playTypeFeedback();
+            reporter.addFeedbackLog(2);
             LOGI("location correct, type wrong");
         break;
         case 3:
-            if(frameTimer <= 0){
-                audio.playLocationFeedback(game.level);
-                frameTimer = 3; // 10 sec
-                reporter.addFeedbackLog(3);
-            }
-            else{
-                frameTimer--;
-            }
+            audio.playLocationFeedback(game.level);
+            reporter.addFeedbackLog(3);
             LOGI("location wrong");
         break;
 
         case 4:
-            if(frameTimer <= 0){
-                audio.playNoObjectFeedback(game.level);
-                frameTimer = 3; // 10 sec
-                reporter.addFeedbackLog(4);
-            }
-            else{
-                frameTimer--;
-            }
+            audio.playNoObjectFeedback(game.level);
+            reporter.addFeedbackLog(4);
             LOGI("no object");
         break;
     }
