@@ -1,4 +1,3 @@
-#include "Common.h"
 #include "Params.h"
 #include <SDL2/SDL.h>
 #include <SDL_mixer.h>

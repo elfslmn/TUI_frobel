@@ -1,4 +1,3 @@
-#include "Common.h"
 #include "Params.h"
 
 class Calibrator{
