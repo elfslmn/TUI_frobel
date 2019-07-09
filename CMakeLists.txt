@@ -61,7 +61,7 @@ set(
   ${SRC_DIR}/Reporter.cpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES} main3.cpp)
+add_executable(${PROJECT_NAME} ${SOURCES} main.cpp)
 
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES) # To handle trailing whitespaces error
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${SDL2_LIBRARIES} -lSDL2_mixer)

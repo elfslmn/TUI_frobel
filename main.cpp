@@ -1,183 +1,293 @@
-#include <iostream>
-#include <opencv2/opencv.hpp>
-#include <opencv2/aruco.hpp>
+#include "Detector.h"
+#include "Calibrator.h"
+#include "Game.h"
+#include "AudioPlayer.h"
+#include "Reporter.h"
 #include <cxxopts.hpp>
 
 using namespace std;
 using namespace cv;
 
-int MODE = 0; // 0: homography, 1:levels
+//Global variables
+int frameTimer;
+GameState game_state; // NOTE can be a part of game class
+Game game;
+AudioPlayer audio;
+VideoCapture gif;
+Mat animation;
+int level = 1;
 
-int main (int argc, char *argv[])
-{
-	// Parse options
-   cxxopts::Options options("TUI Frobel");
-   options
-   .allow_unrecognised_options()
-   .add_options()
-   ("c", "Camera", cxxopts::value<int>(), "camera");
-   cout << options.help() << endl;
-   cout << "Press 'ESC' for exit" << endl << endl;
-   auto result = options.parse(argc, argv);
-   
-   int camId = 0;
-   if(result.count("c"))
-   {
-      camId = result["c"].as<int>();
-   }
-   cout << "Cam id = " << camId << endl;
-   
-	// windows
-	namedWindow ("Camera", WINDOW_AUTOSIZE);
-	namedWindow ("Projector", WINDOW_NORMAL);
-	setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
-	moveWindow("Projector", 1366, 0); // 1366 width of my screen
-	
-	// projected image
-	Mat projImage;
-	vector<Point2f> pCorners, cCorners;
-	Size patternSize(9,6); 
-	if(MODE == 0 )
-	{
-		projImage = imread("images/pattern.png", CV_LOAD_IMAGE_GRAYSCALE);
-		resize(projImage,projImage,Size(1280,720));
-		bool found = findChessboardCorners(projImage, patternSize, pCorners);
-		if(found)
-		{
- 			cornerSubPix(projImage, pCorners, Size(11, 11), Size(-1, -1), 
- 							TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
- 			cout << "Chessboard corners are detected in projected image" << endl;
+string childName = "Child";
+int childAge = 0;
+Reporter reporter;
+
+//Helper methods;
+pair<Shape, string> getLevelParameters(int level);
+void giveFeedback(int feedback_id);
+void playConfettiAnimation(bool loop);
+
+int main (int argc, char *argv[]){
+    // Parse options
+    cxxopts::Options options("TUI Frobel");
+    options
+    .allow_unrecognised_options()
+    .add_options()
+    ("c", "Camera", cxxopts::value<int>(), "camera")
+    ("n", "Name", cxxopts::value<string>(), "name and surname")
+    ("a", "Age", cxxopts::value<int>(), "age");
+    cout << options.help() << endl;
+    cout << "Press 'ESC' for exit" << endl << endl;
+    auto result = options.parse(argc, argv);
+
+    if (result.count("n")) childName = result["n"].as<std::string>();
+    if (result.count("a")) childAge = result["a"].as<int>();
+    cout << "Child: " << childName << "\t Age:" << childAge << endl;
+    reporter = Reporter(childName, childAge);
+
+    // windows
+    namedWindow ("Projector", WINDOW_NORMAL);
+    namedWindow ("Camera", WINDOW_NORMAL);
+    namedWindow ("Snapshot", WINDOW_NORMAL);
+    namedWindow ("Debug", WINDOW_NORMAL);
+    namedWindow ("Diff", WINDOW_NORMAL);
+    setWindowProperty("Projector", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+    moveWindow("Projector", 1366, 0); // 1366 width of my pc screen
+
+    //initialization
+    Calibrator calibrator;
+    calibrator.initCalibrationPattern("images/pattern.png");
+    game_state = CALIBRATING; // TODO should be  CALIBRATING, NEW_GAME for debug
+    LOGD("Game state: CALIBRATING");
+
+    Detector detector;
+
+    // open camera
+    int camId = 0;
+    if(result.count("c")){
+        camId = result["c"].as<int>();
+    }
+    cout << "Cam id = " << camId << endl;
+    VideoCapture cap(camId);
+    Mat frame, projImage;
+
+    while (true)
+    {
+		// Read a frame from cam
+		cap >> frame;
+		if(frame.empty()){
+			cerr << "No camera capture" << endl;
+			break;
 		}
-		else
-		{
-			cerr << "Cannot found chessboard in projected image!" << endl;
+		flip(frame, frame, -1); // flip 180 degree
+
+        if(game_state == CALIBRATING){
+            calibrator.findHomography(frame);
+            if(calibrator.isHomographyFound == true){
+                game_state = NEW_GAME;
+                LOGD("Game state: NEW_GAME");
+            }
+        }
+		else if(game_state == NEW_GAME){
+			auto param = getLevelParameters(level);
+			game = Game(level,param.first, param.second, projImage);
+		    imshow("Projector", projImage);
+
+			frameTimer = 30; // wait few frames, important to capture snapshot
+			game_state = WAIT_SNAPSHOT;
+			LOGD("Game state: WAIT_SNAPSHOT");
+
+            audio.playStory(game.level);
+            reporter.addLevelStartingLog(game.level);
 		}
-		imshow("Projector", projImage);
-	}
-	
-	Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
-	detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
-	detectorParams->adaptiveThreshWinSizeStep = 2;	// 10
-	detectorParams->adaptiveThreshWinSizeMax = 10;	// 23
-	detectorParams->minMarkerPerimeterRate = 0.002; // 0.03
-	detectorParams->maxMarkerPerimeterRate = 0.1;		// 4
-	detectorParams->perspectiveRemovePixelPerCell = 10; 		// 4;
-	detectorParams->perspectiveRemoveIgnoredMarginPerCell = 0.3;// 0.13 
+		else if(game_state == WAIT_SNAPSHOT){
+			frameTimer--;
+			if(frameTimer == 0){
+				game_state = CAPTURING_SNAPSHOT;
+				LOGD("Game state: CAPTURING_SNAPSHOT");
+			}
+		}
+		else if(game_state == CAPTURING_SNAPSHOT){
+			detector.processFrame(frame);
+			if(detector.isSnapshotCaptured == true){
+				game_state = IN_LEVEL;
+				LOGD("Game state: IN_LEVEL");
+			}
+		}
+		else if(game_state == IN_LEVEL && Mix_PlayingMusic() == 0 ){
+			detector.processFrame(frame);
+            calibrator.applyHomography(detector.shapes);
 
-	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(1));
-	
+            int feedback = game.processShapes(detector.shapes);
+            if(feedback  != -1){
+                giveFeedback(feedback);
+            }
+            if(feedback == 0){
+                game_state = LEVEL_FINISHED;
+                LOGD("Game state: LEVEL_FINISHED");
+                reporter.addLevelEndingLog(game.level);
+            }
+		}
+        else if(game_state == LEVEL_FINISHED){
+            //LOGD("Level %d is cleared", game.level);
+            //playConfettiAnimation(true);
+            imshow("Projector", animation);
+            if(Mix_PlayingMusic() == 0){
+                game_state = PICKUP_SHAPES;
+                LOGD("Game state: PICKUP_SHAPES");
+            }
+        }
+        else if(game_state == PICKUP_SHAPES){
+            // TODO tasları al audio
+        }
 
-	VideoCapture cap(camId);
-	Mat camImage, gray;
-	Mat homography;
-	int frame = 0;
-	int has = 0;
-	double totalTime = 0;
-	
-	while (true) 
-	{
-        cap >> camImage;
-        if(camImage.empty()){
-        	cerr << "No camImage" << endl;
-        	break;
-        }
-        flip(camImage, camImage, -1); // flip 180 degree       
-        
-        if( MODE == 0 )
-        {
-        	cvtColor(camImage, gray, COLOR_RGB2GRAY);
-        	bool found = findChessboardCorners(gray, patternSize, cCorners);
-        	if(found)
-			{
-				cout << "Chessboard corners are detected in camera image" << endl;
-	 			cornerSubPix(gray, cCorners, Size(11, 11), Size(-1, -1), 
-	 							TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
-	 			drawChessboardCorners(camImage, patternSize, Mat(cCorners), found);
-	 			homography = findHomography( cCorners, pCorners, CV_RANSAC );
-	 			imshow("Camera", camImage);
-	 			 // for debug, remove later
-	 			cout << homography << endl; 
-	 			//destroyWindow("Projector");
-	 			waitKey(0);
-	 			// end debug
-	 			MODE = 1;
-	 			projImage = imread("images/espas_011-intro.png" ,IMREAD_UNCHANGED);
-				resize(projImage,projImage,Size(1280,720));
-				imshow("Projector", projImage);
-			}
-			else
-			{
-				cerr << "Cannot found chessboard in camera image!" << endl;
-				imshow("Camera", camImage); 
-			}		
-        }
-        else
-        {	
-        	double tick = (double)getTickCount();
-        	vector< int > ids;
-		    vector< vector< Point2f > > corners, rejected;
-		    vector< Vec3d > rvecs, tvecs;
-		    aruco::detectMarkers(camImage, dictionary, corners, ids, detectorParams, rejected);
-		    if(ids.size() > 0) {
-		        aruco::drawDetectedMarkers(camImage, corners, ids);
-		        has++;
-		    }
-		    double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
-        	totalTime += currentTime;
-        	frame++;
-			if(frame % 100 == 0){
-				printf("Accuracy: %.2f \t Time : %.2f ms\n", 
-						(double)has/frame*100, 1000 * totalTime / double(frame));
-				totalTime = 0;
-				frame = 0;
-				has = 0;
-			}
-			
-			/*if(!homography.empty()){
-				Mat debug = Mat::zeros(camImage.size(), CV_8UC1);
-				for(int i=0; i < (int)corners.size(); i++)
-				{
-					Scalar center = mean(corners[i]);
-					circle(debug, Point(center[0], center[1]), 20, 255,-1);  
-				} 
-				warpPerspective(debug, projImage, homography, Size(1280,720));
-				imshow("Projector", projImage); 			
-			}*/
-			
-			if(!homography.empty()){
-				vector<Point2f> original;
-				vector<Point2f> warped;
-				projImage = imread("images/espas_011-intro.png" ,IMREAD_UNCHANGED); // TODO save in a mat
-				resize(projImage,projImage,Size(1280,720));
-				for(int i=0; i < (int)corners.size(); i++)
-				{
-					Scalar center = mean(corners[i]);
-					original.push_back(Point2f(center[0], center[1])); 
-				} 
-				//warpPerspective(debug, projImage, homography, Size(1280,720));
-				if(corners.size()) perspectiveTransform(original, warped, homography);
-				for(int i=0; i < (int)warped.size(); i++)
-				{
-					circle(projImage, warped[i], 30, Scalar(255,255,255), 3);
-				}
-				imshow("Projector", projImage); 			
-			}
-			
-        	imshow("Camera", camImage); 
-        }
-        
+        imshow("Camera", frame);
+        // Handle key presses
         char key = (char) waitKey(30);
-        if(key == 'p')
-        {
-        	key = (char) waitKey();
-        }
-        if (key == 'q' || key == 27)
-        {
+        if(key == 'p') {key = (char) waitKey();}
+        if (key == 'q' || key == 27) {
+            reporter.saveReport(false);
             break;
         }
-        
+        if(key == 83 && game_state == PICKUP_SHAPES){
+            if(game.level == Params::levelCount){
+                LOGD("All levels are cleared");
+                reporter.saveReport(true);
+                // TODO game finished audio, show results
+                break;
+            }
+            else{
+                level++;
+                detector.resetSnapshot();
+                audio.resetFeedbackIndices();
+                frameTimer = 3;
+                game_state = NEW_GAME;
+                LOGD("Game state: NEW_GAME");
+            }
+        }
     }
-	
 
-	return 0;
+
+    return 0;
+}
+
+
+pair<Shape, string> getLevelParameters(int level){
+    Shape shape;
+    string filepath;
+    if(Params::game_mode == FROBEL){
+        switch (level) {
+            case 1:
+            shape.center = Point2f(695, 468);
+            shape.type = GREEN;
+            shape.angle = 70.0;
+            filepath = "images/episode1.png";
+            animation = imread("images/episode1f.png");
+            break;
+
+            case 2:
+            shape.center = Point2f(780 , 250);
+            shape.type = STICK;
+            shape.angle = 103.0;
+            filepath = "images/episode2.png";
+            animation = imread("images/episode2f.png");
+            break;
+
+            case 3:
+            shape.center = Point2f(812, 530);
+            shape.type = CIRCLE;
+            shape.angle = -1;
+            filepath = "images/episode3.png";
+            animation = imread("images/episode3f.png");
+            break;
+
+            case 4:
+            shape.center = Point2f(450, 590);
+            shape.type = GREEN;
+            shape.angle = 100.0;
+            filepath = "images/episode4.png";
+            animation = imread("images/episode4f.png");
+            break;
+        }
+    }
+    else if(Params::game_mode == TANGRAM){
+        switch (level) {
+            case 1:
+            shape.center = Point2f(621, 425);
+            shape.type = GREEN;
+            shape.angle = 102.0;
+            filepath = "images/tangram1.png";
+            animation = imread("images/tangram1f.png");
+            break;
+
+            case 2:
+            shape.center = Point2f(530 , 271);
+            shape.type = PARALLEL;
+            shape.angle = 173.0;
+            filepath = "images/tangram2.png";
+            animation = imread("images/tangram2f.png");
+            break;
+
+            case 3:
+            shape.center = Point2f(861, 461);
+            shape.type = SQUARE;
+            shape.angle = 45.0;
+            filepath = "images/tangram3.png";
+            animation = imread("images/tangram3f.png");
+            break;
+
+            case 4:
+            shape.center = Point2f(335, 428);
+            shape.type = GREEN;
+            shape.angle = 350.0;
+            filepath = "images/tangram4.png";
+            animation = imread("images/tangram4f.png");
+            break;
+        }
+    }
+    else{
+        LOGE("Undefined game mode");
+        assert(false);
+    }
+
+    return {shape, filepath};
+}
+
+void giveFeedback(int feedback_id){
+    switch (feedback_id) {
+        case 0:
+            audio.playCorrectSound();
+            audio.playCongratulations();
+        break;
+        case 1:
+            audio.playAngleFeedback();
+            reporter.addFeedbackLog(1);
+            LOGI("location and type correct, angle wrong");
+        break;
+        case 2:
+            audio.playTypeFeedback();
+            reporter.addFeedbackLog(2);
+            LOGI("location correct, type wrong");
+        break;
+        case 3:
+            audio.playLocationFeedback(game.level);
+            reporter.addFeedbackLog(3);
+            LOGI("location wrong");
+        break;
+
+        case 4:
+            audio.playNoObjectFeedback(game.level);
+            reporter.addFeedbackLog(4);
+            LOGI("no object");
+        break;
+    }
+}
+
+void playConfettiAnimation(bool loop){
+    gif >> animation;
+    if(!animation.empty()){
+        imshow("Projector", animation);
+    }
+    else if(loop){
+        gif = VideoCapture("gifs/confetti.gif");
+    }
 }
